@@ -181,28 +181,69 @@ def program_model(context: ScopeContext):
         solver.add(a == b)
     return solver
 
+def add_assumes():
+    assumes = []
+    assumes.append(z3.Bool('ToSafety.a') == False)
+    assumes.append(z3.Bool('ToSafety.b') == False)
+    return assumes
+
+
 def add_covers():
-    pass
+    covers = []
+    cover0 = z3.Bool('a_or_b')
+    covers.append(cover0)
+    return covers
+
 
 def add_asserts():
-    pass
+    asserts = []
+    a = z3.Bool('ToSafety.a')
+    b = z3.Bool('ToSafety.b')
+    result = z3.Bool('a_or_b')
+    
+    # If a is not true, then b can never be true
+    assert0 = z3.Not(z3.And(a == False, result))
+    asserts.append(assert0)
+    
+    return z3.Or([z3.Not(a) for a in asserts]) 
+
+def run_assertions(program):
+    program.push()
+    try:
+        asserts = add_asserts()
+        program.add(asserts)
+        result = program.check()
+        if result == z3.sat:
+            print('FAILURE: an assertion has been violated')
+            print(program.model())
+        elif result == z3.unsat:
+            print("SUCCESS: no paths to failing assertions")
+        else:
+            print('UNKNOWN: unabe to exhaustively test')
+    finally:
+        program.pop()
+
+def run_covers(program):
+    program.push()
+    try:
+        covers = add_covers()
+        program.add(covers)
+        result = program.check()
+        if result == z3.sat:
+            print('SUCCESS: covers are reachable')
+            print(program.model())
+        elif result == z3.unsat:
+            print("FAILURE: no paths to covers")
+        else:
+            print('UNKNOWN: unabe to exhaustively test')
+    finally:
+        program.pop()
 
 def stuff(context: ScopeContext):
     program: z3.Solver = program_model(context)
+    run_assertions(program)
+    run_covers(program)
 
-    program.push()
-    program.add([z3.Bool('a_or_b') == True, z3.Bool('or_in1') == False, z3.Bool('or_in2') == False])
-    print(program)
-    result = program.check()
-    print('Simplify,', z3.simplify(z3.And(program.assertions()), som=True))
-    if result == z3.sat:
-        print(program.model())
-        print('SAT')
-    elif result == z3.unsat:
-        print('UNSAT, BRO')
-    else:
-        print('IDK')
-    
 
 
 def discover_networks(tree):
