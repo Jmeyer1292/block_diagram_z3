@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 z3-solver = "*"
 lxml = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.9"
