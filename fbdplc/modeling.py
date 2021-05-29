@@ -1,3 +1,7 @@
+from typing import Union
+import z3
+from fbdplc.parts import CoilPart, PartPort
+from fbdplc.wires import IdentConnection, WireConnection
 
 
 class ScopeContext:
@@ -10,7 +14,7 @@ class ScopeContext:
 class VariableResolver:
     def __init__(self):
         self.data = {}
-    
+
     def write(self, name):
         if name in self.data:
             self.data[name] += 1
@@ -18,13 +22,20 @@ class VariableResolver:
         else:
             self.data[name] = 0
             return f'{name}_$0'
-    
+
     def read(self, name):
         data = self.data.get(name, None)
         if data is None:
             self.data[name] = 0
             data = 0
         return f'{name}_${data}'
+
+
+def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, str]:
+    if type(endpoint) == IdentConnection:
+        return context.accesses[endpoint.target_uid]
+    else:
+        return context.parts[endpoint.target_uid].port(endpoint.target_port)
 
 
 def program_model(context: ScopeContext):
@@ -36,14 +47,14 @@ def program_model(context: ScopeContext):
     # Iterate over each part:
     #   declare input and output port names,
     #   declare assertions for inner logic
-    
+
     for uid, part in context.parts.items():
         ex = part.model(None)
         # print(part)
         if ex is not None:
             # print(f'Adding {ex}')
             solver.add(ex)
-    
+
     print("AFTER PARTS BEFORE WIRES")
     print(solver.assertions())
     # Iterate over each wire
@@ -59,7 +70,7 @@ def program_model(context: ScopeContext):
         print(f'Wire {uid}:')
 
         is_write = False
-        write_coil : CoilPart = None
+        write_coil: CoilPart = None
         a_is_coil = False
         if is_access and not a_is_access:
             p = context.parts[wire.a.target_uid]
@@ -72,7 +83,7 @@ def program_model(context: ScopeContext):
             if type(p) == CoilPart:
                 is_write = True
                 write_coil = p
-        
+
         if is_write:
             if a_is_coil:
                 dst_name = resolve(wire.b, context)
@@ -98,12 +109,12 @@ def program_model(context: ScopeContext):
                 a_var = z3.Bool(ssa_resolver.read(a))
             else:
                 a_var = a.var
-            
+
             if type(b) == str:
                 b_var = z3.Bool(ssa_resolver.read(b))
             else:
                 b_var = b.var
             print('Adding ', a_var == b_var)
             solver.add(a_var == b_var)
-        
+
     return solver, ssa_resolver

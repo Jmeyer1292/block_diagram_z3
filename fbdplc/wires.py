@@ -2,6 +2,8 @@
 Edges
 '''
 
+from fbdplc.modeling import ScopeContext
+
 
 class WireConnection:
     pass
@@ -28,6 +30,6 @@ def resolve(conn: WireConnection, context :ScopeContext):
         return context.accesses[conn.target_uid]
 
 class Wire:
-    def __init__(self, a, b):
+    def __init__(self, a: WireConnection, b: WireConnection):
         self.a = a
         self.b = b

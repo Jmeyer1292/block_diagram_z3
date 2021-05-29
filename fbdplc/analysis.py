@@ -2,6 +2,8 @@
 Libraries for constructing analyses of given program models.
 '''
 
+import z3
+
 def add_assumes():
     assumes = []
     assumes.append(z3.Bool('ToSafety.a') == False)
