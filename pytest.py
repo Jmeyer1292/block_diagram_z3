@@ -1,10 +1,7 @@
+from os import write
 from lxml import etree
 import z3
-
-tree : etree._ElementTree = etree.parse('Main_Safety_RTG1.xml')
-print(tree)
-print(type(tree))
-
+from parts import *
 
 def remove_namespaces(root):
     for elem in root.getiterator():
@@ -19,62 +16,18 @@ class ScopeContext:
         self.parts = {}
         self.wires = {}
 
-class Part:
-    def __init__():
-        pass
-
-    def declare_vars(self):
-        pass
-
-class OrPart(Part):
-    def __init__(self, n):
-        self.n = n
-    
-    def resolve(self, port):
-        return f'or_{port}'
-
-    def declare_vars(self):
-        self._inputs = [z3.Bool(f'or_in{i}') for i in range(1, self.n + 1)]
-        self._output = z3.Bool('or_out')
-        return z3.Or(self._inputs) == self._output
-
-class AndPart(Part):
-    def __init__(self, n):
-        self.n = n
-    
-    def declare_vars(self):
-        self._inputs = [z3.Bool(f'and_{i}') for i in range(self.n)]
-        self._output = z3.Bool('and_out')
-        return z3.And(self._inputs) == self._output
-
-class CoilPart(Part):
-    def __init__(self):
-        pass
-    
-    def declare_vars(self):
-        self.input = z3.Bool('coil_in')
-        self.operand = z3.Bool('coil_operand')
-        return self.input == self.operand
-    
-    def resolve(self, port):
-        return f'coil_{port}'
-
-class PBoxPart(Part):
-    def __init__(self):
-        pass
-
-def parse_or(node):
+def parse_or(ns, node):
     n = int(node[0].text)
-    return OrPart(n)
+    return OrPart(ns, n)
 
-def parse_and(node):
+def parse_and(ns, node):
     n = int(node[0].text)
-    return AndPart(n)
+    return AndPart(ns, n)
 
-def parse_coil(node):
-    return CoilPart()
+def parse_coil(ns, node):
+    return CoilPart(ns, bool, node.get('Name'))
 
-def parse_part(node):
+def parse_part(ns, node):
     part_type = node.get('Name')
     uid = node.get('UId')
 
@@ -82,10 +35,14 @@ def parse_part(node):
         'O' : parse_or,
         'A' : parse_and,
         'Coil' : parse_coil,
-        'PBox': lambda node: PBoxPart(),
+        'SCoil' : parse_coil,
+        'RCoil' : parse_coil,
+        # 'PBox': lambda node: PBoxPart(),
     }
 
-    return uid, dispatch[part_type](node)
+    prefix = ':'.join([ns, part_type + uid])
+
+    return uid, dispatch[part_type](prefix, node)
 
 class WireConnection:
     pass
@@ -105,7 +62,11 @@ class IdentConnection(WireConnection):
     def resolve(self, context : ScopeContext):
         return context.accesses[self.target_uid]
 
-
+def resolve(conn: WireConnection, context :ScopeContext):
+    if type(conn) == NamedConnection:
+        return context.parts[conn.target_uid].port(conn.target_port)
+    else:
+        return context.accesses[conn.target_uid]
 
 class Wire:
     def __init__(self, a, b):
@@ -114,6 +75,8 @@ class Wire:
 
 def parse_network(root):
     print('Eval: ', root)
+    ns = root.get('ID')
+    print('ns',ns)
     wires = list(root.iter('Wires'))[0]
     parts = list(root.iter('Parts'))[0]
 
@@ -129,7 +92,7 @@ def parse_network(root):
             access = '.'.join([s.get('Name') for s in p[0]])
             context.accesses[uid] = access
         elif p.tag == 'Part':
-            uid, part = parse_part(p)
+            uid, part = parse_part(ns,p)
             context.parts[uid] = part
         else:
             raise ValueError()
@@ -157,29 +120,85 @@ def parse_network(root):
     return context
 
 def program_model(context: ScopeContext):
+    print('\n\n\n')
     solver = z3.Solver()
+
+    ssa_resolver = VariableResolver()
 
     # Iterate over each part:
     #   declare input and output port names,
     #   declare assertions for inner logic
     
     for uid, part in context.parts.items():
-        ex = part.declare_vars()
+        ex = part.model(None)
         # print(part)
         if ex is not None:
             # print(f'Adding {ex}')
             solver.add(ex)
     
+    print("AFTER PARTS BEFORE WIRES")
+    print(solver.assertions())
     # Iterate over each wire
     for uid, wire in context.wires.items():
-        # add an assertian that wire.a == wire.b
-        a_name = wire.a.resolve(context)
-        b_name = wire.b.resolve(context)
-        a = z3.Bool(a_name)
-        b = z3.Bool(b_name)
+        # A variable read needs to be translated to the SSA form
 
-        solver.add(a == b)
-    return solver
+        # A variable write also needs the SSA form translation
+        # and we have some special case handling inside the coil object
+
+        a_is_access = type(wire.a) == IdentConnection
+        b_is_access = type(wire.b) == IdentConnection
+        is_access = a_is_access or b_is_access
+        print(f'Wire {uid}:')
+
+        is_write = False
+        write_coil : CoilPart = None
+        a_is_coil = False
+        if is_access and not a_is_access:
+            p = context.parts[wire.a.target_uid]
+            if type(p) == CoilPart:
+                is_write = True
+                write_coil = p
+                a_is_coil = True
+        if is_access and not b_is_access:
+            p = context.parts[wire.b.target_uid]
+            if type(p) == CoilPart:
+                is_write = True
+                write_coil = p
+        
+        if is_write:
+            if a_is_coil:
+                dst_name = resolve(wire.b, context)
+                # src_name = resolve(wire.a, context)
+            else:
+                dst_name = resolve(wire.a, context)
+                # src_name = resolve(wire.b, context)
+
+            # The memory access
+            prev = z3.Bool(ssa_resolver.read(dst_name))
+            next = z3.Bool(ssa_resolver.write(dst_name))
+
+            ex1 = write_coil.var('operand') == next
+            ex2 = write_coil.var('_old_operand') == prev
+            print(f'Adding {ex1} and {ex2}')
+            solver.add(ex1)
+            solver.add(ex2)
+        else:
+            a = resolve(wire.a, context)
+            b = resolve(wire.b, context)
+
+            if type(a) == str:
+                a_var = z3.Bool(ssa_resolver.read(a))
+            else:
+                a_var = a.var
+            
+            if type(b) == str:
+                b_var = z3.Bool(ssa_resolver.read(b))
+            else:
+                b_var = b.var
+            print('Adding ', a_var == b_var)
+            solver.add(a_var == b_var)
+        
+    return solver, ssa_resolver
 
 def add_assumes():
     assumes = []
@@ -195,22 +214,24 @@ def add_covers():
     return covers
 
 
-def add_asserts():
+def add_asserts(ssa):
+    print(ssa.data)
     asserts = []
-    a = z3.Bool('ToSafety.a')
-    b = z3.Bool('ToSafety.b')
-    result = z3.Bool('a_or_b')
+    a = z3.Bool(ssa.read('ToSafety.reset'))
+    b = z3.Bool(ssa.read('fault_clear'))
+    # result = z3.Bool('a_or_b')
     
     # If a is not true, then b can never be true
-    assert0 = z3.Not(z3.And(a == False, result))
+    assert0 = z3.Implies(z3.Not(a), z3.Not(b))
+    print('ASSERT THAT', assert0)
     asserts.append(assert0)
     
     return z3.Or([z3.Not(a) for a in asserts]) 
 
-def run_assertions(program):
+def run_assertions(program, ssa):
     program.push()
     try:
-        asserts = add_asserts()
+        asserts = add_asserts(ssa)
         program.add(asserts)
         result = program.check()
         if result == z3.sat:
@@ -240,14 +261,15 @@ def run_covers(program):
         program.pop()
 
 def stuff(context: ScopeContext):
-    program: z3.Solver = program_model(context)
-    run_assertions(program)
-    run_covers(program)
+    program, ssa = program_model(context)
+    print(program)
+    run_assertions(program, ssa)
+    # run_covers(program)
 
 
 
 def discover_networks(tree):
-    networks = tree.iter('NetworkSource')
+    networks = tree.iter('SW.Blocks.CompileUnit')
 
     result = []
     for r in networks:
@@ -260,5 +282,6 @@ def discover_networks(tree):
             pass
     return result
 
+tree : etree._ElementTree = etree.parse('Main_Safety_RTG1.xml')
 networks = discover_networks(remove_namespaces(tree))
-stuff(networks[1])
+stuff(networks[0])
