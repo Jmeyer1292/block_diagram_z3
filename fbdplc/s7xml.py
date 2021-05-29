@@ -19,9 +19,7 @@ def _remove_namespaces(root):
 
 
 def parse_network(root: etree._ElementTree) -> ScopeContext:
-    print('Eval: ', root)
     ns = root.get('ID')
-    print('ns', ns)
     wires = list(root.iter('Wires'))[0]
     parts = list(root.iter('Parts'))[0]
 
