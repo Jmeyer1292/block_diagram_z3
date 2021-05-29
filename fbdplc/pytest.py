@@ -1,4 +1,3 @@
-from os import write
 from lxml import etree
 import z3
 from parts import *
@@ -275,9 +274,6 @@ def discover_networks(tree):
     for r in networks:
         try:
             result.append(parse_network(r))
-        except Exception as e:
-            print(f'Failed parsing {r}', e)
-            continue
         finally:
             pass
     return result

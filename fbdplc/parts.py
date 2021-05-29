@@ -1,6 +1,6 @@
 from ctypes import ArgumentError
 import z3
-from typing import Dict, List
+from typing import Dict
 
 class VariableResolver:
     def __init__(self):
