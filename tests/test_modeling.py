@@ -49,4 +49,16 @@ def test_set():
     program, ssa = modeling.program_model(net)
     # This program has 3 named variables (i.e. not temporaries)
     assert(len(ssa.list_variables()) == 2)
-    # print(program)
+    exec_and_compare(program, ssa,
+                     {'ToSafety.reset': True, 'fault_clear': False},
+                     {'fault_clear': True})
+    exec_and_compare(program, ssa,
+                     {'ToSafety.reset': False, 'fault_clear': False},
+                     {'fault_clear': False})
+    exec_and_compare(program, ssa,
+                     {'ToSafety.reset': False, 'fault_clear': True},
+                     {'fault_clear': True})
+    exec_and_compare(program, ssa,
+                     {'ToSafety.reset': True, 'fault_clear': True},
+                     {'fault_clear': True})
+    
