@@ -3,7 +3,7 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
-from typing import List, Optional
+from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
@@ -108,7 +108,15 @@ def parse_part(ns, node):
     return uid, dispatch[part_type](prefix, node)
 
 
+def _extract_networks(tree: etree.ElementTree):
+    return discover_networks(_remove_namespaces(tree))
+
+
 def parse_from_file(path: str) -> List[ScopeContext]:
-    tree : etree._ElementTree = etree.parse(path)
-    networks = discover_networks(_remove_namespaces(tree))
-    return networks
+    tree: etree._ElementTree = etree.parse(path)
+    return _extract_networks(tree)
+
+
+def parse_from_string(text: str) -> List[ScopeContext]:
+    tree: etree._ElementTree = etree.fromstring(text)
+    return _extract_networks(tree)
