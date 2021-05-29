@@ -61,4 +61,10 @@ def test_set():
     exec_and_compare(program, ssa,
                      {'ToSafety.reset': True, 'fault_clear': True},
                      {'fault_clear': True})
-    
+
+
+def test_pbox():
+    net = parse_from_file('testdata/simple_pbox.xml')[0]
+    program, ssa = modeling.program_model(net)
+    # This program has 3 named variables (i.e. not temporaries)
+    assert(len(ssa.list_variables()) == 3)
