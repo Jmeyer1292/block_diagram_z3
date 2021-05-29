@@ -1,0 +1,72 @@
+<SW.Blocks.CompileUnit ID="D" CompositionName="CompileUnits">
+    <AttributeList>
+        <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+                <Parts>
+                    <Access Scope="GlobalVariable" UId="21">
+                        <Symbol>
+                            <Component Name="ToSafety" />
+                            <Component Name="a" />
+                        </Symbol>
+                    </Access>
+                    <Access Scope="GlobalVariable" UId="22">
+                        <Symbol>
+                            <Component Name="ToSafety" />
+                            <Component Name="b" />
+                        </Symbol>
+                    </Access>
+                    <Access Scope="LocalVariable" UId="23">
+                        <Symbol>
+                            <Component Name="a_or_b" />
+                        </Symbol>
+                    </Access>
+                    <Part Name="O" UId="24">
+                        <TemplateValue Name="Card" Type="Cardinality">2</TemplateValue>
+                    </Part>
+                    <Part Name="Coil" UId="25" />
+                </Parts>
+                <Wires>
+                    <Wire UId="26">
+                        <IdentCon UId="21" />
+                        <NameCon UId="24" Name="in1" />
+                    </Wire>
+                    <Wire UId="27">
+                        <IdentCon UId="22" />
+                        <NameCon UId="24" Name="in2" />
+                    </Wire>
+                    <Wire UId="28">
+                        <NameCon UId="24" Name="out" />
+                        <NameCon UId="25" Name="in" />
+                    </Wire>
+                    <Wire UId="29">
+                        <IdentCon UId="23" />
+                        <NameCon UId="25" Name="operand" />
+                    </Wire>
+                </Wires>
+            </FlgNet>
+        </NetworkSource>
+        <ProgrammingLanguage>F_FBD</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+        <MultilingualText ID="E" CompositionName="Comment">
+            <ObjectList>
+                <MultilingualTextItem ID="F" CompositionName="Items">
+                    <AttributeList>
+                        <Culture>en-US</Culture>
+                        <Text />
+                    </AttributeList>
+                </MultilingualTextItem>
+            </ObjectList>
+        </MultilingualText>
+        <MultilingualText ID="10" CompositionName="Title">
+            <ObjectList>
+                <MultilingualTextItem ID="11" CompositionName="Items">
+                    <AttributeList>
+                        <Culture>en-US</Culture>
+                        <Text />
+                    </AttributeList>
+                </MultilingualTextItem>
+            </ObjectList>
+        </MultilingualText>
+    </ObjectList>
+</SW.Blocks.CompileUnit>

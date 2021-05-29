@@ -2,7 +2,7 @@
 Edges
 '''
 
-from fbdplc.modeling import ScopeContext
+from fbdplc.graph import ScopeContext
 
 
 class WireConnection:
