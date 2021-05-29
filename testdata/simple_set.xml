@@ -1,0 +1,62 @@
+<SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+    <AttributeList>
+        <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+                <Parts>
+                    <Access Scope="GlobalVariable" UId="21">
+                        <Symbol>
+                            <Component Name="ToSafety" />
+                            <Component Name="reset" />
+                        </Symbol>
+                    </Access>
+                    <Access Scope="LocalVariable" UId="22">
+                        <Symbol>
+                            <Component Name="fault_clear" />
+                        </Symbol>
+                    </Access>
+                    <Part Name="A" UId="23">
+                        <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+                    </Part>
+                    <Part Name="SCoil" UId="24" />
+                </Parts>
+                <Wires>
+                    <Wire UId="25">
+                        <IdentCon UId="21" />
+                        <NameCon UId="23" Name="in1" />
+                    </Wire>
+                    <Wire UId="26">
+                        <NameCon UId="23" Name="out" />
+                        <NameCon UId="24" Name="in" />
+                    </Wire>
+                    <Wire UId="27">
+                        <IdentCon UId="22" />
+                        <NameCon UId="24" Name="operand" />
+                    </Wire>
+                </Wires>
+            </FlgNet>
+        </NetworkSource>
+        <ProgrammingLanguage>F_FBD</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+        <MultilingualText ID="4" CompositionName="Comment">
+            <ObjectList>
+                <MultilingualTextItem ID="5" CompositionName="Items">
+                    <AttributeList>
+                        <Culture>en-US</Culture>
+                        <Text />
+                    </AttributeList>
+                </MultilingualTextItem>
+            </ObjectList>
+        </MultilingualText>
+        <MultilingualText ID="6" CompositionName="Title">
+            <ObjectList>
+                <MultilingualTextItem ID="7" CompositionName="Items">
+                    <AttributeList>
+                        <Culture>en-US</Culture>
+                        <Text />
+                    </AttributeList>
+                </MultilingualTextItem>
+            </ObjectList>
+        </MultilingualText>
+    </ObjectList>
+</SW.Blocks.CompileUnit>

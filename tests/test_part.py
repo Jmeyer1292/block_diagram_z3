@@ -26,3 +26,5 @@ def test_or():
     _test_case(orgate, {'in1': False, 'in2': True}, {'out': True})
     _test_case(orgate, {'in1': True, 'in2': False}, {'out': True})
     _test_case(orgate, {'in1': True, 'in2': True}, {'out': True})
+
+

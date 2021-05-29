@@ -25,7 +25,11 @@ class VariableResolver:
             self.data[name] = 0
             return self.ir_name(name, 0)
 
-    def read(self, name):
+    def read(self, name, idx = None):
+        if idx is not None:
+            assert(name in self.data)
+            return self.ir_name(name, idx)
+         
         data = self.data.get(name, None)
         if data is None:
             self.data[name] = 0

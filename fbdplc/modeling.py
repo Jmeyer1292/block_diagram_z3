@@ -13,9 +13,7 @@ def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, 
 
 
 def program_model(context: ScopeContext):
-    print('\n\n\n')
     solver = z3.Solver()
-
     ssa_resolver = VariableResolver()
 
     # Iterate over each part:
@@ -29,8 +27,6 @@ def program_model(context: ScopeContext):
             # print(f'Adding {ex}')
             solver.add(ex)
 
-    print("AFTER PARTS BEFORE WIRES")
-    print(solver.assertions())
     # Iterate over each wire
     for uid, wire in context.wires.items():
         # A variable read needs to be translated to the SSA form
@@ -41,8 +37,7 @@ def program_model(context: ScopeContext):
         a_is_access = type(wire.a) == IdentConnection
         b_is_access = type(wire.b) == IdentConnection
         is_access = a_is_access or b_is_access
-        print(f'Wire {uid}:')
-
+    
         is_write = False
         write_coil: CoilPart = None
         a_is_coil = False
@@ -72,7 +67,6 @@ def program_model(context: ScopeContext):
 
             ex1 = write_coil.var('operand') == next
             ex2 = write_coil.var('_old_operand') == prev
-            print(f'Adding {ex1} and {ex2}')
             solver.add(ex1)
             solver.add(ex2)
         else:
@@ -88,7 +82,6 @@ def program_model(context: ScopeContext):
                 b_var = z3.Bool(ssa_resolver.read(b))
             else:
                 b_var = b.var
-            print('Adding ', a_var == b_var)
             solver.add(a_var == b_var)
 
     return solver, ssa_resolver
