@@ -5,7 +5,6 @@ from fbdplc.wires import IdentConnection, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver
 
 
-
 def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, str]:
     if type(endpoint) == IdentConnection:
         return context.accesses[endpoint.target_uid]
@@ -24,7 +23,7 @@ def program_model(context: ScopeContext):
     #   declare assertions for inner logic
 
     for uid, part in context.parts.items():
-        ex = part.model(None)
+        ex = part.model()
         # print(part)
         if ex is not None:
             # print(f'Adding {ex}')
