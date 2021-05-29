@@ -1,6 +1,6 @@
 import z3
 from typing import Dict
-
+from fbdplc.utils import namespace
 
 class PartPort:
     def __init__(self, name: str, port_type: type):
