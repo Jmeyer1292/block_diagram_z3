@@ -7,7 +7,7 @@ from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import OrPart, AndPart, CoilPart
+from fbdplc.parts import OrPart, AndPart, CoilPart, PTriggerPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 
 
@@ -99,6 +99,7 @@ def parse_part(ns, node):
         'Coil': parse_coil,
         'SCoil': parse_coil,
         'RCoil': parse_coil,
+        'PBox': lambda ns, _: PTriggerPart(ns)
     }
 
     prefix = ':'.join([ns, part_type + uid])

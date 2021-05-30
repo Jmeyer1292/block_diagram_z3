@@ -28,3 +28,13 @@ def test_or():
     _test_case(orgate, {'in1': True, 'in2': True}, {'out': True})
 
 
+def test_ptrig():
+    ptrig = parts.PTriggerPart("ptrig")
+    _test_case(ptrig, {'in': False, '_old_bit': False},
+               {'out': False, 'bit': False})
+    _test_case(ptrig, {'in': False, '_old_bit': True},
+               {'out': False, 'bit': False})
+    _test_case(ptrig, {'in': True, '_old_bit': False},
+               {'out': True, 'bit': True})
+    _test_case(ptrig, {'in': True, '_old_bit': True},
+               {'out': False, 'bit': True})

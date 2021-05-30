@@ -93,3 +93,19 @@ class CoilPart(Part):
             return z3.If(self.var('in'), self.var('operand') == False, self.var('operand') == self.var('_old_operand'))
 
         raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
+
+class PTriggerPart(Part):
+    def __init__(self, name):
+        super().__init__(name)
+        self._add_port('in', bool, PortDirection.IN)
+        self._add_port('out', bool, PortDirection.OUT)
+        self._add_port('bit', bool, PortDirection.OUT)
+        self._add_port('_old_bit', bool, PortDirection.IN)
+
+    def model(self):
+        m = []
+        # Output is true iff !_old_bit and in
+        m.append(z3.And(self.var('in'), z3.Not(self.var('_old_bit'))) == self.var('out'))
+        m.append(self.var('in') == self.var('bit'))
+        return m
+    

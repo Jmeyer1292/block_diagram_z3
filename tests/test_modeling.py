@@ -30,7 +30,9 @@ def exec_and_compare(program: z3.Solver, ssa: modeling.VariableResolver, inputs,
     mem = memory_dict(model, ssa)
 
     for o in expected_outputs:
-        assert(mem[o] == expected_outputs[o])
+        if not (mem[o] == expected_outputs[o]):
+            msg = f'EXEC error: expected var {o} to be {expected_outputs[o]} but got {mem[o]}'
+            raise AssertionError(msg)
 
 
 def test_or():
@@ -66,5 +68,15 @@ def test_set():
 def test_pbox():
     net = parse_from_file('testdata/simple_pbox.xml')[0]
     program, ssa = modeling.program_model(net)
+    print(program)
     # This program has 3 named variables (i.e. not temporaries)
     assert(len(ssa.list_variables()) == 3)
+    exec_and_compare(program, ssa,
+                     {'a_or_b': True, 'p_trig_state': False},
+                     {'rising_a_or_b': True})
+    exec_and_compare(program, ssa,
+                     {'a_or_b': False, 'p_trig_state': False},
+                     {'rising_a_or_b': False})
+    exec_and_compare(program, ssa,
+                     {'a_or_b': True, 'p_trig_state': True},
+                     {'rising_a_or_b': False})
