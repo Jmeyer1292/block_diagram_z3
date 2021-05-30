@@ -1,7 +1,7 @@
 from typing import Union
 import z3
-from fbdplc.parts import CoilPart, PartPort
-from fbdplc.wires import IdentConnection, WireConnection
+from fbdplc.parts import CoilPart, PartPort, PortDirection
+from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver
 
 
@@ -37,38 +37,33 @@ def program_model(context: ScopeContext):
         a_is_access = type(wire.a) == IdentConnection
         b_is_access = type(wire.b) == IdentConnection
         is_access = a_is_access or b_is_access
-    
-        is_write = False
-        write_coil: CoilPart = None
-        a_is_coil = False
-        if is_access and not a_is_access:
-            p = context.parts[wire.a.target_uid]
-            if type(p) == CoilPart:
-                is_write = True
-                write_coil = p
-                a_is_coil = True
-        if is_access and not b_is_access:
-            p = context.parts[wire.b.target_uid]
-            if type(p) == CoilPart:
-                is_write = True
-                write_coil = p
+        assert(not(a_is_access and b_is_access))
 
-        if is_write:
-            if a_is_coil:
-                dst_name = resolve(wire.b, context)
-                # src_name = resolve(wire.a, context)
-            else:
-                dst_name = resolve(wire.a, context)
-                # src_name = resolve(wire.b, context)
+        resolved_a = resolve(wire.a, context)
+        resolved_b = resolve(wire.b, context)
 
-            # The memory access
+        write_t_a = a_is_access and resolved_b.direction == PortDirection.OUT
+        write_t_b = b_is_access and resolved_a.direction == PortDirection.OUT
+        has_write = write_t_a or write_t_b
+
+        def get_part(conn):
+            assert(type(conn) == NamedConnection)
+            return context.parts[conn.target_uid]
+
+        if has_write:
+            dst_name = resolved_a if a_is_access else resolved_b
             prev = z3.Bool(ssa_resolver.read(dst_name))
             next = z3.Bool(ssa_resolver.write(dst_name))
 
-            ex1 = write_coil.var('operand') == next
-            ex2 = write_coil.var('_old_operand') == prev
-            solver.add(ex1)
-            solver.add(ex2)
+            # we want to connect to the port name and the special
+            # _old_port_name ports.
+            part = get_part(wire.a) if write_t_b else get_part(wire.b)
+            port_name = wire.a.target_port if write_t_b else wire.b.target_port
+            prev_var = part.var(f'_old_{port_name}')
+            next_var = part.var(port_name)
+
+            solver.add(prev_var == prev)
+            solver.add(next_var == next)
         else:
             a = resolve(wire.a, context)
             b = resolve(wire.b, context)
