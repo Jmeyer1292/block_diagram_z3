@@ -85,11 +85,17 @@ def parse_or(ns, node):
     n = int(node[0].text)
     return OrPart(ns, n)
 
+def apply_negations(part, negation_list):
+    for n in negation_list:
+        part.port(n).set_negated()
 
 def parse_and(ns, node):
-    n = int(node[0].text)
-    return AndPart(ns, n)
-
+    a = part_attributes(node)
+    n = a['dimension']
+    part = AndPart(ns, n)
+    apply_negations(part, a['negations'])
+    return part
+    
 
 def parse_coil(ns, node):
     return CoilPart(ns, bool, node.get('Name'))
@@ -125,3 +131,17 @@ def parse_from_file(path: str) -> List[ScopeContext]:
 def parse_from_string(text: str) -> List[ScopeContext]:
     tree: etree._ElementTree = etree.fromstring(text)
     return _extract_networks(tree)
+
+def part_attributes(node):
+    attrib = {}
+    negations = []
+    for c in node:
+        if c.tag == 'TemplateValue' and c.get('Type') == 'Cardinality':
+            attrib['dimension'] = int(c.text)
+        
+        if c.tag == 'Negated':
+            port = c.get('Name')
+            if port is None: raise RuntimeError('No "Name" attribute in negated xml tag')
+            negations.append(port)
+    attrib['negations'] = negations
+    return attrib

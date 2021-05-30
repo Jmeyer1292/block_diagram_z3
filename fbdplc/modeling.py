@@ -59,8 +59,8 @@ def program_model(context: ScopeContext):
             # _old_port_name ports.
             part = get_part(wire.a) if write_t_b else get_part(wire.b)
             port_name = wire.a.target_port if write_t_b else wire.b.target_port
-            prev_var = part.var(f'_old_{port_name}')
-            next_var = part.var(port_name)
+            prev_var = part.evar(f'_old_{port_name}')
+            next_var = part.evar(port_name)
 
             solver.add(prev_var == prev)
             solver.add(next_var == next)
@@ -71,12 +71,12 @@ def program_model(context: ScopeContext):
             if type(a) == str:
                 a_var = z3.Bool(ssa_resolver.read(a))
             else:
-                a_var = a.var
+                a_var = a.external_var()
 
             if type(b) == str:
                 b_var = z3.Bool(ssa_resolver.read(b))
             else:
-                b_var = b.var
+                b_var = b.external_var()
             solver.add(a_var == b_var)
 
     return solver, ssa_resolver
