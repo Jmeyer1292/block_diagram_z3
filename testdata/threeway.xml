@@ -1,0 +1,83 @@
+<SW.Blocks.CompileUnit ID="8" CompositionName="CompileUnits">
+    <AttributeList>
+        <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+                <Parts>
+                    <Access Scope="GlobalVariable" UId="21">
+                        <Symbol>
+                            <Component Name="ToSafety" />
+                            <Component Name="a" />
+                        </Symbol>
+                    </Access>
+                    <Access Scope="GlobalVariable" UId="22">
+                        <Symbol>
+                            <Component Name="ToSafety" />
+                            <Component Name="b" />
+                        </Symbol>
+                    </Access>
+                    <Access Scope="LocalVariable" UId="23">
+                        <Symbol>
+                            <Component Name="a_and_b" />
+                        </Symbol>
+                    </Access>
+                    <Access Scope="LocalVariable" UId="24">
+                        <Symbol>
+                            <Component Name="fault_clear" />
+                        </Symbol>
+                    </Access>
+                    <Part Name="A" UId="25">
+                        <TemplateValue Name="Card" Type="Cardinality">2</TemplateValue>
+                    </Part>
+                    <Part Name="Coil" UId="26" />
+                    <Part Name="RCoil" UId="27" />
+                </Parts>
+                <Wires>
+                    <Wire UId="28">
+                        <IdentCon UId="21" />
+                        <NameCon UId="25" Name="in1" />
+                    </Wire>
+                    <Wire UId="29">
+                        <IdentCon UId="22" />
+                        <NameCon UId="25" Name="in2" />
+                    </Wire>
+                    <Wire UId="30">
+                        <NameCon UId="25" Name="out" />
+                        <NameCon UId="26" Name="in" />
+                        <NameCon UId="27" Name="in" />
+                    </Wire>
+                    <Wire UId="31">
+                        <IdentCon UId="23" />
+                        <NameCon UId="26" Name="operand" />
+                    </Wire>
+                    <Wire UId="32">
+                        <IdentCon UId="24" />
+                        <NameCon UId="27" Name="operand" />
+                    </Wire>
+                </Wires>
+            </FlgNet>
+        </NetworkSource>
+        <ProgrammingLanguage>F_FBD</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+        <MultilingualText ID="9" CompositionName="Comment">
+            <ObjectList>
+                <MultilingualTextItem ID="A" CompositionName="Items">
+                    <AttributeList>
+                        <Culture>en-US</Culture>
+                        <Text />
+                    </AttributeList>
+                </MultilingualTextItem>
+            </ObjectList>
+        </MultilingualText>
+        <MultilingualText ID="B" CompositionName="Title">
+            <ObjectList>
+                <MultilingualTextItem ID="C" CompositionName="Items">
+                    <AttributeList>
+                        <Culture>en-US</Culture>
+                        <Text />
+                    </AttributeList>
+                </MultilingualTextItem>
+            </ObjectList>
+        </MultilingualText>
+    </ObjectList>
+</SW.Blocks.CompileUnit>

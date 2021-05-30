@@ -68,7 +68,6 @@ def test_set():
 def test_pbox():
     net = parse_from_file('testdata/simple_pbox.xml')[0]
     program, ssa = modeling.program_model(net)
-    print(program)
     # This program has 3 named variables (i.e. not temporaries)
     assert(len(ssa.list_variables()) == 3)
     exec_and_compare(program, ssa,
@@ -80,3 +79,17 @@ def test_pbox():
     exec_and_compare(program, ssa,
                      {'a_or_b': True, 'p_trig_state': True},
                      {'rising_a_or_b': False})
+
+
+def test_threeway():
+    net = parse_from_file('testdata/threeway.xml')[0]
+    program, ssa = modeling.program_model(net)
+    print(program)
+    # This program has 3 named variables (i.e. not temporaries)
+    assert(len(ssa.list_variables()) == 3)
+    exec_and_compare(program, ssa,
+                     {'ToSafety.a': True, 'ToSafety.b': True, 'fault_clear': True},
+                     {'a_and_b': True, 'fault_clear': False})
+    exec_and_compare(program, ssa,
+                     {'ToSafety.a': True, 'ToSafety.b': False, 'fault_clear': True},
+                     {'a_and_b': False, 'fault_clear': True})
