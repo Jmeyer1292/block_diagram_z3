@@ -41,13 +41,14 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
             raise ValueError()
 
     # WIRES = Wire
-    # Wire = (Con, Con)
+    # Wire = (Con, Con, ...)
     # Con = IdentCon | NameCon
     # IdentCon = An identity connection? References an access directly.
     # NameCon = A named port of a part
     for w in wires:
         assert(w.tag == 'Wire')
         conns = []
+        assert(len(w) >= 2)
         for conn in w:
             uid = conn.get('UId')
             c = None
@@ -58,8 +59,13 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
             else:
                 raise ValueError(f'Unknown wire tag {conn.tag}')
             conns.append(c)
-        assert(len(conns) == 2)
-        context.wires[w.get('UId')] = Wire(conns[0], conns[1])
+
+        # If there are more than 2 endpoints, break it down into
+        # 2-point pairs.
+        uid = w.get('UId')
+        for i in range(1, len(conns)):
+            new_uid = f'{uid}:{i}'
+            context.wires[new_uid] = Wire(conns[0], conns[i])
     return context
 
 

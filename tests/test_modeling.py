@@ -86,7 +86,7 @@ def test_threeway():
     program, ssa = modeling.program_model(net)
     print(program)
     # This program has 3 named variables (i.e. not temporaries)
-    assert(len(ssa.list_variables()) == 3)
+    assert(len(ssa.list_variables()) == 4)
     exec_and_compare(program, ssa,
                      {'ToSafety.a': True, 'ToSafety.b': True, 'fault_clear': True},
                      {'a_and_b': True, 'fault_clear': False})
