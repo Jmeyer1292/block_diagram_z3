@@ -82,8 +82,11 @@ def discover_networks(tree):
 
 
 def parse_or(ns, node):
-    n = int(node[0].text)
-    return OrPart(ns, n)
+    a = part_attributes(node)
+    n = a['dimension']
+    part = OrPart(ns, n)
+    apply_negations(part, a['negations'])
+    return part
 
 def apply_negations(part, negation_list):
     for n in negation_list:
@@ -98,8 +101,10 @@ def parse_and(ns, node):
     
 
 def parse_coil(ns, node):
-    return CoilPart(ns, bool, node.get('Name'))
-
+    a = part_attributes(node)
+    coil = CoilPart(ns, bool, node.get('Name'))
+    apply_negations(coil, a['negations'])
+    return coil
 
 def parse_part(ns, node):
     part_type = node.get('Name')

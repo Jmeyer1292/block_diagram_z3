@@ -131,10 +131,11 @@ class CoilPart(Part):
         super().__init__(name)
         self._add_port('in', port_type, PortDirection.IN)
         self._add_port('operand', port_type, PortDirection.OUT)
+        self._add_port('out', port_type, PortDirection.OUT)
         self._add_port('_old_operand', port_type, PortDirection.IN)
         self.coil_type = coil_type
 
-    def model(self):
+    def _internal_model(self):
         # So a normal coil is just
         #   in == operand
         if self.coil_type == 'Coil':
@@ -148,6 +149,8 @@ class CoilPart(Part):
 
         raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
 
+    def model(self):
+        return self._combine(z3.And(self._internal_model(), self.ivar('in') == self.ivar('out')))
 
 class PTriggerPart(Part):
     def __init__(self, name):
