@@ -97,3 +97,16 @@ def test_negate():
     assert(len(ssa.list_variables()) == 2)
     exec_and_compare(program, ssa, {'fault_clear': True}, {'FromSafety.stop': False})
     exec_and_compare(program, ssa, {'fault_clear': False}, {'FromSafety.stop': True})
+
+
+def test_two_assignments():
+    ''' Psuedo code:
+    t0 = a
+    t0 = !a
+    '''
+    net = parse_from_file('testdata/two_assignments.xml')[0]
+    program, ssa = modeling.program_model(net)
+    print(program)
+    assert(len(ssa.list_variables()) == 2)
+    exec_and_compare(program, ssa, {'a': True}, {'t0': False})
+    exec_and_compare(program, ssa, {'a': False}, {'t0': True})
