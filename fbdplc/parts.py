@@ -62,7 +62,15 @@ class Part:
         self.ports: Dict[PartPort] = {}
 
     def model(self):
-        pass
+        ports = self._port_models()
+        logic_model = self._evaluate_model()
+        if not ports:
+            return logic_model
+        else:
+            return (logic_model, z3.And(ports))
+
+    def _evaluate_model(self):
+        raise NotImplementedError()
 
     def check_assignments(self):
         pass
@@ -108,9 +116,9 @@ class OrPart(Part):
         for i in range(n):
             self._add_port(f'in{i + 1}', bool, PortDirection.IN)
 
-    def model(self):
+    def _evaluate_model(self):
         or_ex = [self.ivar(f'in{i}') for i in range(1, self.n + 1)]
-        return self._combine(z3.Or(or_ex) == self.ivar('out'))
+        return z3.Or(or_ex) == self.ivar('out')
 
 
 class AndPart(Part):
@@ -121,9 +129,9 @@ class AndPart(Part):
         for i in range(n):
             self._add_port(f'in{i + 1}', bool, PortDirection.IN)
 
-    def model(self):
+    def _evaluate_model(self):
         or_ex = [self.ivar(f'in{i}') for i in range(1, self.n + 1)]
-        return self._combine(z3.And(or_ex) == self.ivar('out'))
+        return z3.And(or_ex) == self.ivar('out')
 
 
 class CoilPart(Part):
@@ -149,8 +157,8 @@ class CoilPart(Part):
 
         raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
 
-    def model(self):
-        return self._combine(z3.And(self._internal_model(), self.ivar('in') == self.ivar('out')))
+    def _evaluate_model(self):
+        return z3.And(self._internal_model(), self.ivar('in') == self.ivar('out'))
 
 class PTriggerPart(Part):
     def __init__(self, name):
@@ -160,7 +168,7 @@ class PTriggerPart(Part):
         self._add_port('bit', bool, PortDirection.OUT)
         self._add_port('_old_bit', bool, PortDirection.IN)
 
-    def model(self):
+    def _evaluate_model(self):
         m = []
         # Output is true iff !_old_bit and in
         m.append(z3.And(self.ivar('in'), z3.Not(
