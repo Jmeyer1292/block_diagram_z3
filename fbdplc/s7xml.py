@@ -8,7 +8,7 @@ from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import OrPart, AndPart, CoilPart, PTriggerPart
+from fbdplc.parts import OrPart, AndPart, CoilPart, PTriggerPart, NTriggerPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 
 
@@ -26,7 +26,7 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
 
     context = ScopeContext(ns)
 
-    # PARTS = Access | Part
+    # PARTS = Access | Part | Call
     # Access := A ID'd reference to an external variable
     # Part = A logical block, it has typed "ports" with given names
     for p in parts:
@@ -39,7 +39,7 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
             uid, part = parse_part(ns, p)
             context.parts[namespace(ns, uid)] = part
         else:
-            raise ValueError()
+            raise ValueError(f'{p.tag}')
 
     # WIRES = Wire
     # Wire = (Con, Con, ...)
@@ -117,7 +117,8 @@ def parse_part(ns, node):
         'Coil': parse_coil,
         'SCoil': parse_coil,
         'RCoil': parse_coil,
-        'PBox': lambda ns, _: PTriggerPart(ns)
+        'PBox': lambda ns, _: PTriggerPart(ns),
+        'NBox': lambda ns, _: NTriggerPart(ns)
     }
 
     prefix = ':'.join([ns, part_type + uid])

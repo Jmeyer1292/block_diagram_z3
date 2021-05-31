@@ -175,3 +175,18 @@ class PTriggerPart(Part):
             self.ivar('_old_bit'))) == self.ivar('out'))
         m.append(self.ivar('in') == self.ivar('bit'))
         return m
+
+class NTriggerPart(Part):
+    def __init__(self, name):
+        super().__init__(name)
+        self._add_port('in', bool, PortDirection.IN)
+        self._add_port('out', bool, PortDirection.OUT)
+        self._add_port('bit', bool, PortDirection.OUT)
+        self._add_port('_old_bit', bool, PortDirection.IN)
+
+    def _evaluate_model(self):
+        m = []
+        # Output is true iff _old_bit and !in
+        m.append(z3.And(z3.Not(self.ivar('in')), self.ivar('_old_bit')) == self.ivar('out'))
+        m.append(self.ivar('in') == self.ivar('bit'))
+        return m
