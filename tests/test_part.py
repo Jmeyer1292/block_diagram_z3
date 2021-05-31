@@ -17,7 +17,7 @@ def _test_case(part: parts.Part, inputs, outputs):
 
 
 def _set_inputs(part: parts.Part, args):
-    return [part.var(name) == args[name] for name in args]
+    return [part.evar(name) == args[name] for name in args]
 
 
 def test_or():
