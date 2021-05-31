@@ -1,3 +1,4 @@
+from fbdplc.graph import merge_scopes
 from fbdplc.s7xml import parse_from_file
 import fbdplc.modeling as modeling
 import z3
@@ -93,7 +94,6 @@ def test_threeway():
 def test_negate():
     net = parse_from_file('testdata/negate.xml')[0]
     program, ssa = modeling.program_model(net)
-    print(program)
     assert(len(ssa.list_variables()) == 2)
     exec_and_compare(program, ssa, {'fault_clear': True}, {'FromSafety.stop': False})
     exec_and_compare(program, ssa, {'fault_clear': False}, {'FromSafety.stop': True})
@@ -106,7 +106,20 @@ def test_two_assignments():
     '''
     net = parse_from_file('testdata/two_assignments.xml')[0]
     program, ssa = modeling.program_model(net)
-    print(program)
     assert(len(ssa.list_variables()) == 2)
     exec_and_compare(program, ssa, {'a': True}, {'t0': False})
     exec_and_compare(program, ssa, {'a': False}, {'t0': True})
+
+def test_two_nets():
+    '''
+    The idea of this test is two test the combining of two nets in sequence:
+    '''
+    nets = parse_from_file('testdata/two_nets.xml')
+    assert(len(nets) == 2)
+
+    merged = merge_scopes(nets[0], nets[1])
+    program, ssa = modeling.program_model(merged)
+    assert(len(ssa.list_variables()) == 3)
+    print("two nets program\n",program)
+    exec_and_compare(program, ssa, {'a': True, 'out0': False}, {'t0': False, 'out0': False})
+    exec_and_compare(program, ssa, {'a': False, 'out0': False}, {'t0': True, 'out0': True})

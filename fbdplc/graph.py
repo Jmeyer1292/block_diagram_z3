@@ -1,6 +1,7 @@
 
 class ScopeContext:
-    def __init__(self):
+    def __init__(self, name=''):
+        self.name = name
         self.accesses = {}
         self.parts = {}
         self.wires = {}
@@ -25,14 +26,28 @@ class VariableResolver:
             self.data[name] = 0
             return self.ir_name(name, 0)
 
-    def read(self, name, idx = None):
+    def read(self, name, idx=None):
         if idx is not None:
             assert(name in self.data)
             return self.ir_name(name, idx)
-         
+
         data = self.data.get(name, None)
         if data is None:
             self.data[name] = 0
             data = 0
         return self.ir_name(name, data)
 
+
+def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:
+    result = ScopeContext(a.name + '+' + b.name)
+
+    result.parts = a.parts.copy()
+    result.parts.update(b.parts)
+
+    result.accesses = a.accesses.copy()
+    result.accesses.update(b.accesses)
+
+    result.wires = a.wires.copy()
+    result.wires.update(b.wires)
+
+    return result

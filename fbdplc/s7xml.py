@@ -3,6 +3,7 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
+from fbdplc.utils import namespace
 from typing import List
 from lxml import etree
 
@@ -23,7 +24,7 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
     wires = list(root.iter('Wires'))[0]
     parts = list(root.iter('Parts'))[0]
 
-    context = ScopeContext()
+    context = ScopeContext(ns)
 
     # PARTS = Access | Part
     # Access := A ID'd reference to an external variable
@@ -31,12 +32,12 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
     for p in parts:
         p: etree._Element = p
         if p.tag == 'Access':
-            uid = p.get('UId')
+            uid = namespace(ns, p.get('UId'))
             access = '.'.join([s.get('Name') for s in p[0]])
             context.accesses[uid] = access
         elif p.tag == 'Part':
             uid, part = parse_part(ns, p)
-            context.parts[uid] = part
+            context.parts[namespace(ns, uid)] = part
         else:
             raise ValueError()
 
@@ -50,7 +51,7 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
         conns = []
         assert(len(w) >= 2)
         for conn in w:
-            uid = conn.get('UId')
+            uid = namespace(ns, conn.get('UId'))
             c = None
             if conn.tag == 'NameCon':
                 c = NamedConnection(uid, conn.get('Name'))
@@ -62,7 +63,7 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
 
         # If there are more than 2 endpoints, break it down into
         # 2-point pairs.
-        uid = w.get('UId')
+        uid = namespace(ns, w.get('UId'))
         for i in range(1, len(conns)):
             new_uid = f'{uid}:{i}'
             context.wires[new_uid] = Wire(conns[0], conns[i])
