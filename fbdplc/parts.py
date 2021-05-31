@@ -84,7 +84,7 @@ class Part:
         else:
             return (logic_model, z3.And(ports))
 
-    def port(self, name: str):
+    def port(self, name: str) -> PartPort:
         return self.ports[name]
 
     def ivar(self, name: str):

@@ -28,6 +28,15 @@ def test_or():
     _test_case(orgate, {'in1': True, 'in2': True}, {'out': True})
 
 
+def test_or_with_not():
+    orgate = parts.OrPart("or", 2)
+    orgate.port('out').set_negated()
+    _test_case(orgate, {'in1': False, 'in2': False}, {'out': not False})
+    _test_case(orgate, {'in1': False, 'in2': True}, {'out': not True})
+    _test_case(orgate, {'in1': True, 'in2': False}, {'out': not True})
+    _test_case(orgate, {'in1': True, 'in2': True}, {'out': not True})
+
+
 def test_ptrig():
     ptrig = parts.PTriggerPart("ptrig")
     _test_case(ptrig, {'in': False, '_old_bit': False},
