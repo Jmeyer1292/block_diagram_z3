@@ -28,7 +28,9 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
 
     # PARTS = Access | Part | Call
     # Access := A ID'd reference to an external variable
-    # Part = A logical block, it has typed "ports" with given names
+    # Part := A logical block, it has typed "ports" with given names. A 'primitive' so to speak.
+    # Call := Similar to a Part, but the implementation is user defined. Requires linking with the
+    #         logic loaded from a different program.
     for p in parts:
         p: etree._Element = p
         if p.tag == 'Access':
@@ -138,6 +140,7 @@ def parse_from_file(path: str) -> List[ScopeContext]:
 def parse_from_string(text: str) -> List[ScopeContext]:
     tree: etree._ElementTree = etree.fromstring(text)
     return _extract_networks(tree)
+
 
 def part_attributes(node):
     attrib = {}

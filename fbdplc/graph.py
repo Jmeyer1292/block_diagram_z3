@@ -5,6 +5,7 @@ class ScopeContext:
         self.accesses = {}
         self.parts = {}
         self.wires = {}
+        self.calls = {}
 
 
 class VariableResolver:
