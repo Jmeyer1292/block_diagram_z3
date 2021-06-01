@@ -91,12 +91,15 @@ def test_threeway():
                      {'ToSafety.a': True, 'ToSafety.b': False, 'fault_clear': True},
                      {'a_and_b': False, 'fault_clear': True})
 
+
 def test_negate():
     net = parse_from_file('testdata/negate.xml')[0]
     program, ssa = modeling.program_model(net)
     assert(len(ssa.list_variables()) == 2)
-    exec_and_compare(program, ssa, {'fault_clear': True}, {'FromSafety.stop': False})
-    exec_and_compare(program, ssa, {'fault_clear': False}, {'FromSafety.stop': True})
+    exec_and_compare(program, ssa, {'fault_clear': True}, {
+                     'FromSafety.stop': False})
+    exec_and_compare(program, ssa, {'fault_clear': False}, {
+                     'FromSafety.stop': True})
 
 
 def test_two_assignments():
@@ -110,6 +113,7 @@ def test_two_assignments():
     exec_and_compare(program, ssa, {'a': True}, {'t0': False})
     exec_and_compare(program, ssa, {'a': False}, {'t0': True})
 
+
 def test_two_nets():
     '''
     The idea of this test is two test the combining of two nets in sequence:
@@ -120,6 +124,20 @@ def test_two_nets():
     merged = merge_scopes(nets[0], nets[1])
     program, ssa = modeling.program_model(merged)
     assert(len(ssa.list_variables()) == 3)
-    print("two nets program\n",program)
-    exec_and_compare(program, ssa, {'a': True, 'out0': False}, {'t0': False, 'out0': False})
-    exec_and_compare(program, ssa, {'a': False, 'out0': False}, {'t0': True, 'out0': True})
+    exec_and_compare(program, ssa, {'a': True, 'out0': False}, {
+                     't0': False, 'out0': False})
+    exec_and_compare(program, ssa, {'a': False, 'out0': False}, {
+                     't0': True, 'out0': True})
+
+
+def test_constants():
+    ''' Psuedo code:
+    ton = False || ALWAYS_FALSE
+
+    where ALWAYS_FALSE is a constant...
+    '''
+    net = parse_from_file('testdata/constants.xml')[0]
+    program, ssa = modeling.program_model(net)
+    assert(len(ssa.list_variables()) == 2)
+    exec_and_compare(program, ssa, {'ALWAYS_FALSE': True}, {'ton': True})
+    exec_and_compare(program, ssa, {'ALWAYS_FALSE': False}, {'ton': False})
