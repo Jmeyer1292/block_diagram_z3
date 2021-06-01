@@ -10,6 +10,7 @@ from lxml import etree
 from fbdplc.modeling import ScopeContext
 from fbdplc.parts import OrPart, AndPart, CoilPart, PTriggerPart, NTriggerPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
+from fbdplc.access import *
 
 
 def _remove_namespaces(root):
@@ -17,6 +18,40 @@ def _remove_namespaces(root):
         elem.tag = etree.QName(elem).localname
     etree.cleanup_namespaces(root)
     return root
+
+
+def parse_access(node, ns: str):
+    assert(node.tag == 'Access')
+    scope = node.get('Scope')
+
+    if scope == 'LocalVariable' or scope == 'GlobalVariable':
+        child = node[0]
+        assert(child.tag == 'Symbol')
+        varname = '.'.join([s.get('Name') for s in child])
+        return SymbolAccess(scope, varname)
+    elif scope == 'LocalConstant':
+        child = node[0]
+        assert(child.tag == 'Constant')
+        varname = child.get('Name')
+        return SymbolConstantAccess(scope, varname)
+    elif scope == 'LiteralConstant':
+        child = node[0]
+        assert(child.tag == 'Constant')
+        type_node = child[0]
+        assert(type_node.tag == 'ConstantType')
+        value_node = child[1]
+        assert(value_node.tag == 'ConstantValue')
+        # TODO(Jmeyer): Handle not just bools
+        assert(type_node.text == 'Bool')
+        b = None
+        if value_node.text == 'True':
+            return LiteralConstantAccess(True)
+        elif value_node.text == 'False':
+            return LiteralConstantAccess(False)
+        else:
+            raise ValueError(f'Unsupported literal value {value_node.text}')
+    else:
+        raise ValueError(f'Unimplemented scope for Access, "{scope}"')
 
 
 def parse_network(root: etree._ElementTree) -> ScopeContext:
@@ -35,7 +70,7 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
         p: etree._Element = p
         if p.tag == 'Access':
             uid = namespace(ns, p.get('UId'))
-            access = '.'.join([s.get('Name') for s in p[0]])
+            access = parse_access(p, ns)
             context.accesses[uid] = access
         elif p.tag == 'Part':
             uid, part = parse_part(ns, p)
@@ -91,9 +126,11 @@ def parse_or(ns, node):
     apply_negations(part, a['negations'])
     return part
 
+
 def apply_negations(part, negation_list):
     for n in negation_list:
         part.port(n).set_negated()
+
 
 def parse_and(ns, node):
     a = part_attributes(node)
@@ -101,13 +138,14 @@ def parse_and(ns, node):
     part = AndPart(ns, n)
     apply_negations(part, a['negations'])
     return part
-    
+
 
 def parse_coil(ns, node):
     a = part_attributes(node)
     coil = CoilPart(ns, bool, node.get('Name'))
     apply_negations(coil, a['negations'])
     return coil
+
 
 def parse_part(ns, node):
     part_type = node.get('Name')
@@ -148,10 +186,11 @@ def part_attributes(node):
     for c in node:
         if c.tag == 'TemplateValue' and c.get('Type') == 'Cardinality':
             attrib['dimension'] = int(c.text)
-        
+
         if c.tag == 'Negated':
             port = c.get('Name')
-            if port is None: raise RuntimeError('No "Name" attribute in negated xml tag')
+            if port is None:
+                raise RuntimeError('No "Name" attribute in negated xml tag')
             negations.append(port)
     attrib['negations'] = negations
     return attrib

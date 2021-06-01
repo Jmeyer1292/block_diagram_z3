@@ -3,9 +3,10 @@ import z3
 from fbdplc.parts import CoilPart, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver
+from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
 
-def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, str]:
+def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, Access]:
     if type(endpoint) == IdentConnection:
         return context.accesses[endpoint.target_uid]
     else:
@@ -52,8 +53,8 @@ def program_model(context: ScopeContext):
 
         if has_write:
             dst_name = resolved_a if a_is_access else resolved_b
-            prev = z3.Bool(ssa_resolver.read(dst_name))
-            next = z3.Bool(ssa_resolver.write(dst_name))
+            prev = z3.Bool(ssa_resolver.read(dst_name.symbol))
+            next = z3.Bool(ssa_resolver.write(dst_name.symbol))
 
             # we want to connect to the port name and the special
             # _old_port_name ports.
@@ -68,15 +69,22 @@ def program_model(context: ScopeContext):
             a = resolve(wire.a, context)
             b = resolve(wire.b, context)
 
-            if type(a) == str:
-                a_var = z3.Bool(ssa_resolver.read(a))
+            if isinstance(a, Access):
+                if isinstance(a, (SymbolAccess, SymbolConstantAccess)):
+                    a_var = z3.Bool(ssa_resolver.read(a.symbol))
+                elif isinstance(a, LiteralConstantAccess):
+                    a_var = a.value
             else:
                 a_var = a.external_var()
 
-            if type(b) == str:
-                b_var = z3.Bool(ssa_resolver.read(b))
+            if isinstance(b, Access):
+                if isinstance(b, (SymbolAccess, SymbolConstantAccess)):
+                    b_var = z3.Bool(ssa_resolver.read(b.symbol))
+                elif isinstance(b, LiteralConstantAccess):
+                    b_var = b.value
             else:
                 b_var = b.external_var()
+
             solver.add(a_var == b_var)
 
     return solver, ssa_resolver

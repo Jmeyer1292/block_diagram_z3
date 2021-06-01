@@ -49,8 +49,11 @@ class PartPort:
             return self._var if self.direction == PortDirection.IN else self._negated
 
     def model(self):
-        if self._negated is None: return []
-        else: return [self._negated == z3.Not(self._var)]
+        if self._negated is None:
+            return []
+        else:
+            return [self._negated == z3.Not(self._var)]
+
 
 class Part:
     '''
@@ -84,7 +87,7 @@ class Part:
         for port in self.ports.values():
             model.extend(port.model())
         return model
-    
+
     def _combine(self, logic_model):
         ports = self._port_models()
         if not ports:
@@ -100,7 +103,7 @@ class Part:
         Retrieves the exterior facing signal
         '''
         return self.port(name).internal_var()
-    
+
     def evar(self, name: str):
         '''
         Retrieves the exterior facing signal
@@ -160,6 +163,7 @@ class CoilPart(Part):
     def _evaluate_model(self):
         return z3.And(self._internal_model(), self.ivar('in') == self.ivar('out'))
 
+
 class PTriggerPart(Part):
     def __init__(self, name):
         super().__init__(name)
@@ -176,6 +180,7 @@ class PTriggerPart(Part):
         m.append(self.ivar('in') == self.ivar('bit'))
         return m
 
+
 class NTriggerPart(Part):
     def __init__(self, name):
         super().__init__(name)
@@ -187,6 +192,7 @@ class NTriggerPart(Part):
     def _evaluate_model(self):
         m = []
         # Output is true iff _old_bit and !in
-        m.append(z3.And(z3.Not(self.ivar('in')), self.ivar('_old_bit')) == self.ivar('out'))
+        m.append(z3.And(z3.Not(self.ivar('in')),
+                 self.ivar('_old_bit')) == self.ivar('out'))
         m.append(self.ivar('in') == self.ivar('bit'))
         return m
