@@ -3,6 +3,7 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
+from fbdplc.functions import Block, Section
 from fbdplc.utils import namespace
 from typing import List
 from lxml import etree
@@ -54,12 +55,65 @@ def parse_access(node, ns: str):
         raise ValueError(f'Unimplemented scope for Access, "{scope}"')
 
 
+def parse_block(tree: etree._ElementTree) -> Block:
+    root = tree.getroot()
+    assert(root.tag == 'Document')
+    BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
+    block_node = [b for b in root if b.tag in BLOCK_TAGS]
+    assert(len(block_node) == 1)
+    print(block_node)
+    return parse_function_block(block_node[0])
+
+def parse_function_block(root: etree._Element):
+    name_node = root.iter('Name')
+    block_name = list(name_node)[0].text
+    block = Block(block_name)
+    # Variables
+    iface_node = [l for l in root.iter('Interface')]
+    assert(len(iface_node) == 1)
+    iface_node = iface_node[0]
+
+    TAG_MAP = {
+        'Input': Section.INPUT,
+        'Output': Section.OUTPUT,
+        'InOut': Section.INOUT,
+        'Temp': Section.TEMP,
+        'Constant': Section.CONSTANT,
+        'Return': Section.RETURN,
+    }
+
+    TYPE_MAP = {
+        'Bool': bool,
+    }
+
+    for section in iface_node[0]:
+        print('Section {}'.format(section))
+        section_name = section.get('Name')
+        section_enum = TAG_MAP[section_name]
+
+        for member in section:
+            n = member.get('Name')
+            datatype = member.get('Datatype')
+            if datatype == 'Void':
+                continue
+            block.variables.add(section_enum, n, TYPE_MAP[datatype])
+    
+    block.networks = discover_networks(root)
+    return block
+    
+
+
 def parse_network(root: etree._ElementTree) -> ScopeContext:
     ns = root.get('ID')
-    wires = list(root.iter('Wires'))[0]
-    parts = list(root.iter('Parts'))[0]
+    wires = list(root.iter('Wires'))
+    parts = list(root.iter('Parts'))
 
     context = ScopeContext(ns)
+    if len(wires) == 0:
+        return context
+    
+    wires = wires[0]
+    parts= parts[0]
 
     # PARTS = Access | Part | Call
     # Access := A ID'd reference to an external variable

@@ -38,21 +38,23 @@
       <HeaderFamily />
       <HeaderName />
       <HeaderVersion>0.1</HeaderVersion>
-      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
-  <Section Name="Input">
-    <Member Name="a" Datatype="Bool" Accessibility="Public" />
-    <Member Name="b" Datatype="Bool" Accessibility="Public" />
-  </Section>
-  <Section Name="Output">
-    <Member Name="a_and_b" Datatype="Bool" Accessibility="Public" />
-  </Section>
-  <Section Name="InOut" />
-  <Section Name="Temp" />
-  <Section Name="Constant" />
-  <Section Name="Return">
-    <Member Name="Ret_Val" Datatype="Void" Accessibility="Public" />
-  </Section>
-</Sections></Interface>
+      <Interface>
+        <Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+          <Section Name="Input">
+            <Member Name="a" Datatype="Bool" Accessibility="Public" />
+            <Member Name="b" Datatype="Bool" Accessibility="Public" />
+          </Section>
+          <Section Name="Output">
+            <Member Name="a_and_b" Datatype="Bool" Accessibility="Public" />
+          </Section>
+          <Section Name="InOut" />
+          <Section Name="Temp" />
+          <Section Name="Constant" />
+          <Section Name="Return">
+            <Member Name="Ret_Val" Datatype="Void" Accessibility="Public" />
+          </Section>
+        </Sections>
+      </Interface>
       <IsIECCheckEnabled>false</IsIECCheckEnabled>
       <MemoryLayout>Optimized</MemoryLayout>
       <Name>UserAnd</Name>
@@ -74,47 +76,49 @@
       </MultilingualText>
       <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
         <AttributeList>
-          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
-  <Parts>
-    <Access Scope="LocalVariable" UId="21">
-      <Symbol>
-        <Component Name="a" />
-      </Symbol>
-    </Access>
-    <Access Scope="LocalVariable" UId="22">
-      <Symbol>
-        <Component Name="b" />
-      </Symbol>
-    </Access>
-    <Access Scope="LocalVariable" UId="23">
-      <Symbol>
-        <Component Name="a_and_b" />
-      </Symbol>
-    </Access>
-    <Part Name="A" UId="24">
-      <TemplateValue Name="Card" Type="Cardinality">2</TemplateValue>
-    </Part>
-    <Part Name="Coil" UId="25" />
-  </Parts>
-  <Wires>
-    <Wire UId="26">
-      <IdentCon UId="21" />
-      <NameCon UId="24" Name="in1" />
-    </Wire>
-    <Wire UId="27">
-      <IdentCon UId="22" />
-      <NameCon UId="24" Name="in2" />
-    </Wire>
-    <Wire UId="28">
-      <NameCon UId="24" Name="out" />
-      <NameCon UId="25" Name="in" />
-    </Wire>
-    <Wire UId="29">
-      <IdentCon UId="23" />
-      <NameCon UId="25" Name="operand" />
-    </Wire>
-  </Wires>
-</FlgNet></NetworkSource>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21">
+                  <Symbol>
+                    <Component Name="a" />
+                  </Symbol>
+                </Access>
+                <Access Scope="LocalVariable" UId="22">
+                  <Symbol>
+                    <Component Name="b" />
+                  </Symbol>
+                </Access>
+                <Access Scope="LocalVariable" UId="23">
+                  <Symbol>
+                    <Component Name="a_and_b" />
+                  </Symbol>
+                </Access>
+                <Part Name="A" UId="24">
+                  <TemplateValue Name="Card" Type="Cardinality">2</TemplateValue>
+                </Part>
+                <Part Name="Coil" UId="25" />
+              </Parts>
+              <Wires>
+                <Wire UId="26">
+                  <IdentCon UId="21" />
+                  <NameCon UId="24" Name="in1" />
+                </Wire>
+                <Wire UId="27">
+                  <IdentCon UId="22" />
+                  <NameCon UId="24" Name="in2" />
+                </Wire>
+                <Wire UId="28">
+                  <NameCon UId="24" Name="out" />
+                  <NameCon UId="25" Name="in" />
+                </Wire>
+                <Wire UId="29">
+                  <IdentCon UId="23" />
+                  <NameCon UId="25" Name="operand" />
+                </Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
           <ProgrammingLanguage>F_FBD</ProgrammingLanguage>
         </AttributeList>
         <ObjectList>
