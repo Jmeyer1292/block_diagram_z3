@@ -141,3 +141,14 @@ def test_constants():
     assert(len(ssa.list_variables()) == 2)
     exec_and_compare(program, ssa, {'ALWAYS_FALSE': True}, {'ton': True})
     exec_and_compare(program, ssa, {'ALWAYS_FALSE': False}, {'ton': False})
+
+
+def test_fc_call():
+    ''' Psuedo code:
+    UserAnd(a=a, b=a, a_and_b => ton)
+    '''
+    net = parse_from_file('testdata/fc_call.xml')[0]
+    program, ssa = modeling.program_model(net)
+    assert(len(ssa.list_variables()) == 2)
+    exec_and_compare(program, ssa, {'a': True}, {'ton': True})
+    exec_and_compare(program, ssa, {'a': False}, {'ton': False})

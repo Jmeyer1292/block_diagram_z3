@@ -10,3 +10,4 @@ def test():
 
     print(block.name)
     print(block.variables)
+    print(block.networks)
