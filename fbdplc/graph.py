@@ -1,3 +1,4 @@
+import functools
 
 class ScopeContext:
     def __init__(self, name=''):
@@ -51,4 +52,10 @@ def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:
     result.wires = a.wires.copy()
     result.wires.update(b.wires)
 
+    result.calls = a.calls.copy()
+    result.calls.update(b.calls)
+
     return result
+
+def merge_nets(nets):
+    return functools.reduce(merge_scopes, nets)

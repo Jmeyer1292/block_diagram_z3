@@ -3,7 +3,7 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
-from fbdplc.functions import Block, Section
+from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
 from typing import List
 from lxml import etree
@@ -64,6 +64,7 @@ def parse_block(tree: etree._ElementTree) -> Block:
     print(block_node)
     return parse_function_block(block_node[0])
 
+
 def parse_function_block(root: etree._Element):
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
@@ -97,10 +98,16 @@ def parse_function_block(root: etree._Element):
             if datatype == 'Void':
                 continue
             block.variables.add(section_enum, n, TYPE_MAP[datatype])
-    
+
     block.networks = discover_networks(root)
     return block
-    
+
+
+def parse_call(node: etree._Element, ns: str):
+    uid = node.get('UId')
+    call_info = node[0]
+    target = call_info.get('Name')
+    return uid, Call(target)
 
 
 def parse_network(root: etree._ElementTree) -> ScopeContext:
@@ -111,9 +118,9 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
     context = ScopeContext(ns)
     if len(wires) == 0:
         return context
-    
+
     wires = wires[0]
-    parts= parts[0]
+    parts = parts[0]
 
     # PARTS = Access | Part | Call
     # Access := A ID'd reference to an external variable
@@ -129,6 +136,9 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
         elif p.tag == 'Part':
             uid, part = parse_part(ns, p)
             context.parts[namespace(ns, uid)] = part
+        elif p.tag == 'Call':
+            uid, call = parse_call(p, ns)
+            context.calls[namespace(ns, uid)] = call
         else:
             raise ValueError(f'{p.tag}')
 
@@ -148,6 +158,9 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
                 c = NamedConnection(uid, conn.get('Name'))
             elif conn.tag == 'IdentCon':
                 c = IdentConnection(uid)
+            elif conn.tag == 'OpenCon':
+                # An explicit no-op con
+                continue
             else:
                 raise ValueError(f'Unknown wire tag {conn.tag}')
             conns.append(c)
@@ -227,6 +240,21 @@ def _extract_networks(tree: etree.ElementTree):
 def parse_from_file(path: str) -> List[ScopeContext]:
     tree: etree._ElementTree = etree.parse(path)
     return _extract_networks(tree)
+
+
+def parse_from_string(text: str) -> List[ScopeContext]:
+    tree: etree._ElementTree = etree.fromstring(text)
+    return _extract_networks(tree)
+
+
+def parse_function_from_file(path: str) -> Block:
+    tree: etree._ElementTree = etree.parse(path)
+    return parse_block(tree)
+
+
+def parse_function_from_text(path: str) -> Block:
+    tree: etree._ElementTree = etree.fromstring(path)
+    return parse_block(tree)
 
 
 def parse_from_string(text: str) -> List[ScopeContext]:

@@ -1,5 +1,15 @@
+from fbdplc.utils import namespace
+from fbdplc.parts import Part, PartPort, PortDirection
+from typing import Dict
 from fbdplc.graph import ScopeContext
 import enum
+
+
+class Program:
+    def __init__(self, title: str):
+        self.title = title
+        self.blocks = {}
+        self.entry = 'main'
 
 
 class Section(enum.Enum):
@@ -50,10 +60,6 @@ class BlockVariables:
         data_section.append((name, datatype))
 
 
-class Networks:
-    pass
-
-
 class Block:
     '''
     In Siemens land, a block is sort of akin to a class.
@@ -72,3 +78,24 @@ class Block:
         self.name = name
         self.variables = BlockVariables()  # includes constants
         self.networks = []
+
+
+class Call(Part):
+    def __init__(self, target: str):
+        super().__init__(target)
+        self.target = target
+        # The data structure also has info about the block type
+        # and each of the parameters. Is this redundant with the
+        # info in the associated call?
+        self.ports: Dict[str, PartPort] = {}
+        # A unique identifer for this particularly call. Needs to be statically determinable. No recursion.
+        # self._block = block
+        
+        # # Need to allocate ports
+        # for v in self._block.variables.input:
+        #     self._add_port(v[0], v[1], PortDirection.IN)
+        # for v in self._block.variables.output:
+        #     self._add_port(v[0], v[1], PortDirection.OUT)
+        # for v in self._block.variables.inout:
+        #     self._add_port(v[0], v[1], PortDirection.OUT)
+        
