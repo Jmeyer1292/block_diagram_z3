@@ -1,6 +1,7 @@
 from fbdplc.graph import ScopeContext
 import enum
 
+
 class Section(enum.Enum):
     INPUT = 0
     OUTPUT = 1
@@ -8,6 +9,7 @@ class Section(enum.Enum):
     TEMP = 3
     CONSTANT = 4
     RETURN = 5
+
 
 class BlockVariables:
     def __init__(self):
@@ -17,11 +19,17 @@ class BlockVariables:
         self.temp = []
         self.constant = []
         self.ret = []
-    
+
     def __str__(self):
-        inputs = ','.join([f'({s[0]}, {s[1]})' for s in self.input])
-        return f'VarBlock({inputs})'
-    
+        input = ','.join([f'({s[0]}, {s[1]})' for s in self.input])
+        output = ','.join([f'({s[0]}, {s[1]})' for s in self.output])
+        inout = ','.join([f'({s[0]}, {s[1]})' for s in self.inout])
+        temp = ','.join([f'({s[0]}, {s[1]})' for s in self.temp])
+        constant = ','.join([f'({s[0]}, {s[1]})' for s in self.constant])
+        ret = ','.join([f'({s[0]}, {s[1]})' for s in self.ret])
+
+        return f'VarBlock(\n\tinputs={input}\n\toutput={output}\n\tinout={inout}\n\ttemp={temp}\n\tconstant={constant}\n\tret={ret}\n)'
+
     def add(self, section: Section, name: str, datatype: type):
         data_section = None
         if section == Section.INPUT:
@@ -41,8 +49,10 @@ class BlockVariables:
             raise RuntimeError(f'Unrecognized section enum {section}')
         data_section.append((name, datatype))
 
+
 class Networks:
     pass
+
 
 class Block:
     '''
@@ -50,16 +60,15 @@ class Block:
     FB blocks have state associated with them.
     FC blocks are stateless; a sort of general function call.
     '''
+
     def __init__(self, name: str):
         pass
         # A function block has a name
         # It has an interface which tracks what variables we have.
         #  Section = Input | Output | InOut | Temp | Constant | Return
-        # 
+        #
         # where each section is composed of 0+ "Members"
         #  Member = (Name, Datatype)
         self.name = name
-        self.variables = BlockVariables() # includes constants
+        self.variables = BlockVariables()  # includes constants
         self.networks = []
-
-
