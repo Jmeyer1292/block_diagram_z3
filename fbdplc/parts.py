@@ -94,163 +94,183 @@ class PartTemplate:
         self.negations.add(port_name)
 
 
-class OrPart2(PartTemplate):
-    def __init__(self, name):
+class OrPart(PartTemplate):
+    def __init__(self, name, n: int):
         super().__init__(name)
+        self.dimension = n
 
     def instantiate(self, ns, context: z3.Context) -> PartModel:
         instance_name = namespace(ns, self.name)
         model = PartModel(instance_name)
-        model.add_port('in1', bool, PortDirection.IN)
-        model.add_port('in2', bool, PortDirection.IN)
+        for i in range(1, self.dimension + 1):
+            model.add_port(f'in{i}', bool, PortDirection.IN)
         model.add_port('out', bool, PortDirection.OUT)
         for p in self.negations:
             model.ports[p].set_negated()
         model.instantiate_ports(context)
 
-        logic = z3.Or(model.ivar('in1'), model.ivar('in2')) == model.ivar('out')
-        model.assertions.append(logic)
+        or_expr = z3.Or([model.ivar(f'in{i}') for i in range(1, self.dimension + 1)])
+
+        model.assertions.append(or_expr == model.ivar('out'))
         return model
 
+class AndPart(PartTemplate):
+    def __init__(self, name, n: int):
+        super().__init__(name)
+        self.dimension = n
 
-class Part:
-    '''
-    A Part has a name and a set of typed ports
-    '''
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        for i in range(1, self.dimension + 1):
+            model.add_port(f'in{i}', bool, PortDirection.IN)
+        model.add_port('out', bool, PortDirection.OUT)
+        for p in self.negations:
+            model.ports[p].set_negated()
+        model.instantiate_ports(context)
 
-    def __init__(self, name):
-        self.name = name
-        self.ports: Dict[PartPort] = {}
-
-    def model(self):
-        ports = self._port_models()
-        logic_model = self._evaluate_model()
-        if not ports:
-            return logic_model
-        else:
-            return (logic_model, z3.And(ports))
-
-    def _evaluate_model(self):
-        raise NotImplementedError()
-
-    def check_assignments(self):
-        pass
-
-    def _add_port(self, name: str, port_type: type, direction: PortDirection):
-        self.ports[name] = PartPort(
-            namespace(self.name, name), port_type, direction)
-
-    def _port_models(self):
-        model = []
-        for port in self.ports.values():
-            model.extend(port.model())
+        and_expr = z3.And([model.ivar(f'in{i}') for i in range(1, self.dimension + 1)])
+        model.assertions.append(and_expr == model.ivar('out'))
         return model
 
-    def _combine(self, logic_model):
-        ports = self._port_models()
-        if not ports:
-            return logic_model
-        else:
-            return (logic_model, z3.And(ports))
+# class Part:
+#     '''
+#     A Part has a name and a set of typed ports
+#     '''
 
-    def port(self, name: str) -> PartPort:
-        return self.ports[name]
+#     def __init__(self, name):
+#         self.name = name
+#         self.ports: Dict[PartPort] = {}
 
-    def ivar(self, name: str):
-        '''
-        Retrieves the exterior facing signal
-        '''
-        return self.port(name).internal_var()
+#     def model(self):
+#         ports = self._port_models()
+#         logic_model = self._evaluate_model()
+#         if not ports:
+#             return logic_model
+#         else:
+#             return (logic_model, z3.And(ports))
 
-    def evar(self, name: str):
-        '''
-        Retrieves the exterior facing signal
-        '''
-        return self.port(name).external_var()
+#     def _evaluate_model(self):
+#         raise NotImplementedError()
 
+#     def check_assignments(self):
+#         pass
 
-class OrPart(Part):
-    def __init__(self, name: str, n: int):
-        super().__init__(name)
-        self._add_port('out', bool, PortDirection.OUT)
-        self.n = n
-        for i in range(n):
-            self._add_port(f'in{i + 1}', bool, PortDirection.IN)
+#     def _add_port(self, name: str, port_type: type, direction: PortDirection):
+#         self.ports[name] = PartPort(
+#             namespace(self.name, name), port_type, direction)
 
-    def _evaluate_model(self):
-        or_ex = [self.ivar(f'in{i}') for i in range(1, self.n + 1)]
-        return z3.Or(or_ex) == self.ivar('out')
+#     def _port_models(self):
+#         model = []
+#         for port in self.ports.values():
+#             model.extend(port.model())
+#         return model
 
+#     def _combine(self, logic_model):
+#         ports = self._port_models()
+#         if not ports:
+#             return logic_model
+#         else:
+#             return (logic_model, z3.And(ports))
 
-class AndPart(Part):
-    def __init__(self, name: str, n: int):
-        super().__init__(name)
-        self._add_port('out', bool, PortDirection.OUT)
-        self.n = n
-        for i in range(n):
-            self._add_port(f'in{i + 1}', bool, PortDirection.IN)
+#     def port(self, name: str) -> PartPort:
+#         return self.ports[name]
 
-    def _evaluate_model(self):
-        or_ex = [self.ivar(f'in{i}') for i in range(1, self.n + 1)]
-        return z3.And(or_ex) == self.ivar('out')
+#     def ivar(self, name: str):
+#         '''
+#         Retrieves the exterior facing signal
+#         '''
+#         return self.port(name).internal_var()
 
-
-class CoilPart(Part):
-    def __init__(self, name, port_type=bool, coil_type: str = 'Coil'):
-        super().__init__(name)
-        self._add_port('in', port_type, PortDirection.IN)
-        self._add_port('operand', port_type, PortDirection.OUT)
-        self._add_port('out', port_type, PortDirection.OUT)
-        self._add_port('_old_operand', port_type, PortDirection.IN)
-        self.coil_type = coil_type
-
-    def _internal_model(self):
-        # So a normal coil is just
-        #   in == operand
-        if self.coil_type == 'Coil':
-            return self.ivar('in') == self.ivar('operand')
-
-        if self.coil_type == 'SCoil':
-            return z3.If(self.ivar('in'), self.ivar('operand') == True, self.ivar('operand') == self.ivar('_old_operand'))
-
-        if self.coil_type == 'RCoil':
-            return z3.If(self.ivar('in'), self.ivar('operand') == False, self.ivar('operand') == self.ivar('_old_operand'))
-
-        raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
-
-    def _evaluate_model(self):
-        return z3.And(self._internal_model(), self.ivar('in') == self.ivar('out'))
+#     def evar(self, name: str):
+#         '''
+#         Retrieves the exterior facing signal
+#         '''
+#         return self.port(name).external_var()
 
 
-class PTriggerPart(Part):
-    def __init__(self, name):
-        super().__init__(name)
-        self._add_port('in', bool, PortDirection.IN)
-        self._add_port('out', bool, PortDirection.OUT)
-        self._add_port('bit', bool, PortDirection.OUT)
-        self._add_port('_old_bit', bool, PortDirection.IN)
+# class OrPart(Part):
+#     def __init__(self, name: str, n: int):
+#         super().__init__(name)
+#         self._add_port('out', bool, PortDirection.OUT)
+#         self.n = n
+#         for i in range(n):
+#             self._add_port(f'in{i + 1}', bool, PortDirection.IN)
 
-    def _evaluate_model(self):
-        m = []
-        # Output is true iff !_old_bit and in
-        m.append(z3.And(self.ivar('in'), z3.Not(
-            self.ivar('_old_bit'))) == self.ivar('out'))
-        m.append(self.ivar('in') == self.ivar('bit'))
-        return m
+#     def _evaluate_model(self):
+#         or_ex = [self.ivar(f'in{i}') for i in range(1, self.n + 1)]
+#         return z3.Or(or_ex) == self.ivar('out')
 
 
-class NTriggerPart(Part):
-    def __init__(self, name):
-        super().__init__(name)
-        self._add_port('in', bool, PortDirection.IN)
-        self._add_port('out', bool, PortDirection.OUT)
-        self._add_port('bit', bool, PortDirection.OUT)
-        self._add_port('_old_bit', bool, PortDirection.IN)
+# class AndPart(Part):
+#     def __init__(self, name: str, n: int):
+#         super().__init__(name)
+#         self._add_port('out', bool, PortDirection.OUT)
+#         self.n = n
+#         for i in range(n):
+#             self._add_port(f'in{i + 1}', bool, PortDirection.IN)
 
-    def _evaluate_model(self):
-        m = []
-        # Output is true iff _old_bit and !in
-        m.append(z3.And(z3.Not(self.ivar('in')),
-                 self.ivar('_old_bit')) == self.ivar('out'))
-        m.append(self.ivar('in') == self.ivar('bit'))
-        return m
+#     def _evaluate_model(self):
+#         or_ex = [self.ivar(f'in{i}') for i in range(1, self.n + 1)]
+#         return z3.And(or_ex) == self.ivar('out')
+
+
+# class CoilPart(Part):
+#     def __init__(self, name, port_type=bool, coil_type: str = 'Coil'):
+#         super().__init__(name)
+#         self._add_port('in', port_type, PortDirection.IN)
+#         self._add_port('operand', port_type, PortDirection.OUT)
+#         self._add_port('out', port_type, PortDirection.OUT)
+#         self._add_port('_old_operand', port_type, PortDirection.IN)
+#         self.coil_type = coil_type
+
+#     def _internal_model(self):
+#         # So a normal coil is just
+#         #   in == operand
+#         if self.coil_type == 'Coil':
+#             return self.ivar('in') == self.ivar('operand')
+
+#         if self.coil_type == 'SCoil':
+#             return z3.If(self.ivar('in'), self.ivar('operand') == True, self.ivar('operand') == self.ivar('_old_operand'))
+
+#         if self.coil_type == 'RCoil':
+#             return z3.If(self.ivar('in'), self.ivar('operand') == False, self.ivar('operand') == self.ivar('_old_operand'))
+
+#         raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
+
+#     def _evaluate_model(self):
+#         return z3.And(self._internal_model(), self.ivar('in') == self.ivar('out'))
+
+
+# class PTriggerPart(Part):
+#     def __init__(self, name):
+#         super().__init__(name)
+#         self._add_port('in', bool, PortDirection.IN)
+#         self._add_port('out', bool, PortDirection.OUT)
+#         self._add_port('bit', bool, PortDirection.OUT)
+#         self._add_port('_old_bit', bool, PortDirection.IN)
+
+#     def _evaluate_model(self):
+#         m = []
+#         # Output is true iff !_old_bit and in
+#         m.append(z3.And(self.ivar('in'), z3.Not(
+#             self.ivar('_old_bit'))) == self.ivar('out'))
+#         m.append(self.ivar('in') == self.ivar('bit'))
+#         return m
+
+
+# class NTriggerPart(Part):
+#     def __init__(self, name):
+#         super().__init__(name)
+#         self._add_port('in', bool, PortDirection.IN)
+#         self._add_port('out', bool, PortDirection.OUT)
+#         self._add_port('bit', bool, PortDirection.OUT)
+#         self._add_port('_old_bit', bool, PortDirection.IN)
+
+#     def _evaluate_model(self):
+#         m = []
+#         # Output is true iff _old_bit and !in
+#         m.append(z3.And(z3.Not(self.ivar('in')),
+#                  self.ivar('_old_bit')) == self.ivar('out'))
+#         m.append(self.ivar('in') == self.ivar('bit'))
+#         return m
