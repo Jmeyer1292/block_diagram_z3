@@ -21,12 +21,15 @@ class PartPort:
         self.name = name
         self.port_type = port_type
         self.direction = direction
+        self.is_negated = False
         # internal & external variables
         self._var = None
         self._negated = None
-        if port_type == bool:
-            self._var = z3.Bool(name)
-        assert(self._var is not None)
+    
+    def instantiate(self, ctx: z3.Context):
+        self._var = z3.Bool(self.name, ctx=ctx)
+        if self.is_negated:
+            self._negated = z3.Bool(self.name + '__neg', ctx=ctx)
 
     def set_negated(self):
         if self.port_type != bool:
@@ -34,7 +37,7 @@ class PartPort:
         if self._negated is not None:
             raise RuntimeError(f'Port {self.name} already negated')
 
-        self._negated = z3.Bool(self.name + '__neg')
+        self.is_negated = True
 
     def internal_var(self):
         if self._negated is None:
@@ -53,6 +56,61 @@ class PartPort:
             return []
         else:
             return [self._negated == z3.Not(self._var)]
+
+class PartModel:
+    def __init__(self, name):
+        self.name = name
+        self.assertions = []
+        self.ports : Dict[str, PartPort] = {}
+    
+    def add_port(self, name: str, port_type: type, dir: PortDirection):
+        self.ports[name] = PartPort(namespace(self.name, name), port_type, dir)
+
+    def instantiate_ports(self, context: z3.Context):
+        model = []
+        for p in self.ports.values():
+            p.instantiate(context)
+            port_model = p.model()
+            model.extend(port_model)
+        self.assertions.extend(model)
+        
+
+    def ivar(self, port_name: str):
+        return self.ports[port_name].internal_var()
+    
+    def evar(self, port_name: str):
+        return self.ports[port_name].external_var()
+
+class PartTemplate:
+    def __init__(self, name: str):
+        self.name = name
+        self.negations = set()
+    
+    def instantiate(self, namespace, context: z3.Context) -> PartModel:
+        ''' Returns a unique program model '''
+        pass
+
+    def add_negation(self, port_name: str):
+        self.negations.add(port_name)
+
+
+class OrPart2(PartTemplate):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        model.add_port('in1', bool, PortDirection.IN)
+        model.add_port('in2', bool, PortDirection.IN)
+        model.add_port('out', bool, PortDirection.OUT)
+        for p in self.negations:
+            model.ports[p].set_negated()
+        model.instantiate_ports(context)
+
+        logic = z3.Or(model.ivar('in1'), model.ivar('in2')) == model.ivar('out')
+        model.assertions.append(logic)
+        return model
 
 
 class Part:

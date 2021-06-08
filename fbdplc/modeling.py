@@ -6,12 +6,17 @@ from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver, merge_nets, merge_scopes
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
+class ProgramModel:
+    def __init__(self):
+        self.assertions = []
+        self.ctx = z3.Context()
 
 def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, Access]:
     if type(endpoint) == IdentConnection:
         return context.accesses[endpoint.target_uid]
     else:
         return context.parts[endpoint.target_uid].port(endpoint.target_port)
+
 
 def resolve2(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, Access]:
     if type(endpoint) == IdentConnection:
@@ -22,25 +27,33 @@ def resolve2(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort,
         if part is None:
             part = context.calls.get(endpoint.target_uid)
             if part is None:
-                raise RuntimeError(f'Unable to resolve named port reference {endpoint.target_uid}')
-        
+                raise RuntimeError(
+                    f'Unable to resolve named port reference {endpoint.target_uid}')
+
         return part.port(endpoint.target_port)
 
-def _model_block(program: Program, solver: z3.Solver, ssa: VariableResolver, block: Block, ctx: List):
-    print(f'Considering block {block.name} w/ ctx {ctx}')
+def _model_block(program: Program, program_model: ProgramModel, ssa: VariableResolver, block: Block, call_stack: List):
+    print(f'Considering block {block.name} w/ call_stack {call_stack}')
+    # TODO(Jmeyer): Reduce the current call_stack to a namespace that makes each variable in this scope unique
+    ns = ''
     # A block consists of an ordered sequence of networks.
     # Each network could potentially call into other blocks, in which case the translator
     # recursively descends into them and generates a model.
     #
-    # Namespacing will be important here.
+    # Each entity within a scope has a 'uid' associated with it. This uid is unique only to
+    # the scope it is contained within.
     code = merge_nets(block.networks)
 
-    # For each part
-    for uid, part in code.parts.items():
+    # Build a dictionary of instantiated parts
+
+    # So the algorithm is loop over the parts and instantiate them from our block template:  
+    for uid, part_template in code.parts.items():
+        model = part_template.instantiate(ns, program_model.ctx)
+        program_model.assertions.extend(model)
         ex = part.model()
         if ex is not None:
             solver.add(ex)
-    
+
     # We can generate the logic for all of the primitives first
     # We can generate function call instances now too.
     for uid, call in code.calls.items():
@@ -50,7 +63,7 @@ def _model_block(program: Program, solver: z3.Solver, ssa: VariableResolver, blo
         # We need to generate interfaces (e.g. ports) for these just like
         # the primitive parts seen earlier.
         _model_block(program, solver, ssa, next_block, ctx + [call _iface])
-    
+
     # Then wire it all up.
      # Iterate over each wire
     for uid, wire in code.wires.items():
@@ -120,22 +133,22 @@ def _model_program(program: Program):
         for p in scope.parts:
             # parts are terminal, no need to recurse
             model = p.instantiate(context)
-        
+
         for c in scope.calls:
             block = program[c]
             next_context = make_new_context(c, block)
             iterate(block, context + next_context) 
 
-        
-        
+
+
         The parts in the scope are unique to that scope. When we combine scopes with a single
         function, they will also be unique.
 
     The context is used to verify accesses:
-    
+
     The context is used to check for recursion:
 
-        
+
 
     '''
     print('Model program')

@@ -1,4 +1,8 @@
 
 def namespace(ns : str , name : str):
-    return ':'.join([ns, name])
+    if len(ns) != 0:
+        return ':'.join([ns, name])
+    else:
+        return name
+
 
