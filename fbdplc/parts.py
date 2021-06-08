@@ -133,6 +133,44 @@ class AndPart(PartTemplate):
         model.assertions.append(and_expr == model.ivar('out'))
         return model
 
+class CoilPart(PartTemplate):
+    def __init__(self, name, port_type=bool, coil_type: str = 'Coil'):
+        super().__init__(name)
+        self.coil_type = coil_type
+        self.port_type = port_type
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        model.add_port('in', self.port_type, PortDirection.IN)
+        model.add_port('operand', self.port_type, PortDirection.OUT)
+        model.add_port('out', self.port_type, PortDirection.OUT)
+        model.add_port('_old_operand', self.port_type, PortDirection.IN)
+        for p in self.negations:
+            model.ports[p].set_negated()
+        model.instantiate_ports(context)
+
+        logic = z3.And(self._internal_model(), model.ivar('in') == model.ivar('out'))
+        model.assertions.append(logic)
+
+        return model
+
+    def _internal_model(self, model: PartModel):
+        # So a normal coil is just
+        #   in == operand
+        if self.coil_type == 'Coil':
+            return model.ivar('in') == model.ivar('operand')
+
+        if self.coil_type == 'SCoil':
+            return z3.If(model.ivar('in'), model.ivar('operand') == True, model.ivar('operand') == model.ivar('_old_operand'))
+
+        if self.coil_type == 'RCoil':
+            return z3.If(model.ivar('in'), model.ivar('operand') == False, model.ivar('operand') == model.ivar('_old_operand'))
+
+        raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
+
+
+
 # class Part:
 #     '''
 #     A Part has a name and a set of typed ports

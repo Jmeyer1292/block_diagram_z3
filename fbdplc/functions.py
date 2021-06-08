@@ -1,8 +1,9 @@
 from fbdplc.utils import namespace
-from fbdplc.parts import Part, PartPort, PortDirection
+from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
 from fbdplc.graph import ScopeContext
 import enum
+import z3
 
 
 class Program:
@@ -79,8 +80,12 @@ class Block:
         self.variables = BlockVariables()  # includes constants
         self.networks = []
 
+class Scope:
+    def __init__(self, block: Block):
+        self.name = block.name
+        self.variables = block.variables
 
-class Call(Part):
+class Call(PartTemplate):
     def __init__(self, target: str):
         super().__init__(target)
         self.target = target
@@ -92,10 +97,21 @@ class Call(Part):
         # self._block = block
         
         # # Need to allocate ports
-        # for v in self._block.variables.input:
-        #     self._add_port(v[0], v[1], PortDirection.IN)
-        # for v in self._block.variables.output:
-        #     self._add_port(v[0], v[1], PortDirection.OUT)
-        # for v in self._block.variables.inout:
-        #     self._add_port(v[0], v[1], PortDirection.OUT)
+
+    def instantiate(self, ns: str, context: z3.Context, block: Block) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        for v in block.variables.input:
+            model.add_port(v[0], v[1], PortDirection.IN)
+        for v in block.variables.output:
+            model.add_port(v[0], v[1], PortDirection.OUT)
+        for v in block.variables.inout:
+            model.add_port(v[0], v[1], PortDirection.OUT)
+        
+        for p in self.negations:
+            model.ports[p].set_negated()
+        model.instantiate_ports(context)
+
+        return model
+
         

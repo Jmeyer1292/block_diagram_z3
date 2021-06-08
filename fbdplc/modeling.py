@@ -1,7 +1,7 @@
-from fbdplc.functions import Block, Program
+from fbdplc.functions import Block, Call, Program, Scope
 from typing import List, Union
 import z3
-from fbdplc.parts import CoilPart, PartPort, PortDirection
+from fbdplc.parts import CoilPart, PartModel, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver, merge_nets, merge_scopes
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
@@ -35,7 +35,7 @@ def resolve2(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort,
 def _model_block(program: Program, program_model: ProgramModel, ssa: VariableResolver, block: Block, call_stack: List):
     print(f'Considering block {block.name} w/ call_stack {call_stack}')
     # TODO(Jmeyer): Reduce the current call_stack to a namespace that makes each variable in this scope unique
-    ns = ''
+    ns = '$'.join([c.name for c in call_stack])
     # A block consists of an ordered sequence of networks.
     # Each network could potentially call into other blocks, in which case the translator
     # recursively descends into them and generates a model.
@@ -45,49 +45,78 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
     code = merge_nets(block.networks)
 
     # Build a dictionary of instantiated parts
-
+    callables = {}
     # So the algorithm is loop over the parts and instantiate them from our block template:  
     for uid, part_template in code.parts.items():
-        model = part_template.instantiate(ns, program_model.ctx)
-        program_model.assertions.extend(model)
-        ex = part.model()
-        if ex is not None:
-            solver.add(ex)
+        model : PartModel = part_template.instantiate(ns, program_model.ctx)
+        callables[uid] = model
+        program_model.assertions.extend(model.assertions)
 
     # We can generate the logic for all of the primitives first
     # We can generate function call instances now too.
     for uid, call in code.calls.items():
         next_block = program.blocks[call.target]
-        call_iface = instantiate_call_iface(next_block)
-        # Create an instance of this block within this context:
-        # We need to generate interfaces (e.g. ports) for these just like
-        # the primitive parts seen earlier.
-        _model_block(program, solver, ssa, next_block, ctx + [call _iface])
+        # The interface to a function call in THIS scope.
+        model = call.instantiate(ns, program_model.ctx, next_block)
+        callables[uid] = model
+        # We need to tie the call interface to the local scope variables in the next layer
+        # Allocate a new scope
+        new_scope = Scope(next_block)
+
+        variable_model = new_scope.instantiate(ns, context)
+        
+        _model_block(program, program_model, ssa, next_block, call_stack + [new_scope])
 
     # Then wire it all up.
-     # Iterate over each wire
+    # The wires define the program execution order, so translation to something akin to SSA
+    # should be a matter of following this though.
     for uid, wire in code.wires.items():
-        # A variable read needs to be translated to the SSA form
-
-        # A variable write also needs the SSA form translation
-        # and we have some special case handling inside the coil object
-
         a_is_access = type(wire.a) == IdentConnection
         b_is_access = type(wire.b) == IdentConnection
-        is_access = a_is_access or b_is_access
         assert(not(a_is_access and b_is_access))
 
-        resolved_a = resolve2(wire.a, code)
-        resolved_b = resolve2(wire.b, code)
+        
+        # Get the variable associated with each endpoint of the wire
+        resolved_a = None
+        if type(wire.a) == IdentConnection:
+            access = code.accesses[wire.a.target_uid]
+            print(f'wire.a is a symbolic memory access: {access}')
+            # Could be a global or local access
+            scope = call_stack[-1]
+            resolved_a = scope.resolve_access(access)
 
-        write_t_a = a_is_access and resolved_b.direction == PortDirection.OUT
-        write_t_b = b_is_access and resolved_a.direction == PortDirection.OUT
-        has_write = write_t_a or write_t_b
 
-        def get_part(conn):
-            assert(type(conn) == NamedConnection)
-            return code.parts[conn.target_uid]
+        elif type(wire.a) == NamedConnection:
+            print(f'wire.a is a port access: {wire.a.target_port}')
+        
+        resolved_b = None
+        if type(wire.b) == IdentConnection:
+            print(f'wire.b is a symbolic memory access: {code.accesses[wire.b.target_uid]}')
+            
+        elif type(wire.b) == NamedConnection:
+            print(f'wire.b is a port access: {wire.b.target_port}')
+        # resolved_a = resolve2(wire.a, code)
+        # resolved_b = resolve2(wire.b, code)
 
+
+
+        write_to_a = a_is_access and resolved_b.direction == PortDirection.OUT
+        write_to_b = b_is_access and resolved_a.direction == PortDirection.OUT
+        has_write = write_to_a or write_to_b
+
+        # In essence, all we want to do is connect the variable associated with
+        # wire.a with the variable associated with wire.b.
+
+        # Lets say we're writing and we have A -> B
+        #   We have (A == B)
+        # Sometimes we have to model side effects on memory. Some parts, like RCoil, may
+        # as a side effect write to memory or it may not. However, our z3 model is purely
+        # functional: we must always write. To deal with this, parts with outputs
+        # automatically get a special input variable. 
+        #   (Prev(A) == B)
+
+
+       
         if has_write:
             dst_name = resolved_a if a_is_access else resolved_b
             prev = z3.Bool(ssa.read(dst_name.symbol))
@@ -95,8 +124,8 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
 
             # we want to connect to the port name and the special
             # _old_port_name ports.
-            part = get_part(wire.a) if write_t_b else get_part(wire.b)
-            port_name = wire.a.target_port if write_t_b else wire.b.target_port
+            part = get_part(wire.a) if write_to_b else get_part(wire.b)
+            port_name = wire.a.target_port if write_to_b else wire.b.target_port
             prev_var = part.evar(f'_old_{port_name}')
             next_var = part.evar(port_name)
 

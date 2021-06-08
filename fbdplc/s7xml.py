@@ -9,7 +9,7 @@ from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import OrPart, AndPart, CoilPart, PTriggerPart, NTriggerPart
+from fbdplc.parts import OrPart, AndPart, PartTemplate, CoilPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
@@ -194,9 +194,9 @@ def parse_or(ns, node):
     return part
 
 
-def apply_negations(part, negation_list):
+def apply_negations(part : PartTemplate, negation_list):
     for n in negation_list:
-        part.port(n).set_negated()
+        part.negations.add(n)
 
 
 def parse_and(ns, node):
@@ -224,8 +224,8 @@ def parse_part(ns, node):
         'Coil': parse_coil,
         'SCoil': parse_coil,
         'RCoil': parse_coil,
-        'PBox': lambda ns, _: PTriggerPart(ns),
-        'NBox': lambda ns, _: NTriggerPart(ns)
+        # 'PBox': lambda ns, _: PTriggerPart(ns),
+        # 'NBox': lambda ns, _: NTriggerPart(ns)
     }
 
     prefix = ':'.join([ns, part_type + uid])

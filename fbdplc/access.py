@@ -21,7 +21,7 @@ class SymbolAccess(Access):
         self.symbol = symbol
     
     def __str__(self):
-        return f'SymbolAccess("{self.symbol}")'
+        return f'SymbolAccess("{self.symbol}", scope={self.scope})'
 
 
 class SymbolConstantAccess(Access):
