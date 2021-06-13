@@ -1,3 +1,4 @@
+from fbdplc.utils import namespace
 from fbdplc.functions import Block, Call, Program, Scope
 from typing import List, Union
 import z3
@@ -32,6 +33,13 @@ def resolve2(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort,
 
         return part.port(endpoint.target_port)
 
+class MemoryAccessProxy:
+    def __init__(self, name, scope):
+        self.name, self.scope = name, scope
+    
+    def __str__(self):
+        return f'MemoryAccessProxy({self.name} from {self.scope})'
+
 def _model_block(program: Program, program_model: ProgramModel, ssa: VariableResolver, block: Block, call_stack: List):
     print(f'Considering block {block.name} w/ call_stack {call_stack}')
     # TODO(Jmeyer): Reduce the current call_stack to a namespace that makes each variable in this scope unique
@@ -43,10 +51,11 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
     # Each entity within a scope has a 'uid' associated with it. This uid is unique only to
     # the scope it is contained within.
     code = merge_nets(block.networks)
-
+    
     # Build a dictionary of instantiated parts
     callables = {}
     # So the algorithm is loop over the parts and instantiate them from our block template:  
+    print('--Parts--')
     for uid, part_template in code.parts.items():
         model : PartModel = part_template.instantiate(ns, program_model.ctx)
         callables[uid] = model
@@ -54,55 +63,92 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
 
     # We can generate the logic for all of the primitives first
     # We can generate function call instances now too.
+    print('--Calls--')
     for uid, call in code.calls.items():
         next_block = program.blocks[call.target]
-        # The interface to a function call in THIS scope.
-        model = call.instantiate(ns, program_model.ctx, next_block)
-        callables[uid] = model
-        # We need to tie the call interface to the local scope variables in the next layer
-        # Allocate a new scope
-        new_scope = Scope(next_block)
 
-        variable_model = new_scope.instantiate(ns, context)
+        # The interface to a function call in THIS scope.
+        # Acts as a sort of user defined "part" that can be connected to via ports like any of
+        # the primitives.
+        model = call.instantiate(namespace(ns, uid), program_model.ctx, next_block)
+        callables[uid] = model
+
+        # The act of calling a function creates a new scope in which the block variables
+        # associated with that scope are available in the eval of the block and are also
+        # connected to the input/output variables.
+        new_scope = Scope(ns, program_model.ctx, next_block)
+        models = new_scope.link_call(model)
         
         _model_block(program, program_model, ssa, next_block, call_stack + [new_scope])
 
     # Then wire it all up.
     # The wires define the program execution order, so translation to something akin to SSA
     # should be a matter of following this though.
+    print('--Wires--')
     for uid, wire in code.wires.items():
         a_is_access = type(wire.a) == IdentConnection
         b_is_access = type(wire.b) == IdentConnection
         assert(not(a_is_access and b_is_access))
 
-        
+        # write_to_a = a_is_access and resolved_b.direction == PortDirection.OUT
+        # write_to_b = b_is_access and resolved_a.direction == PortDirection.OUT
+        # has_write_to_mem = write_to_a or write_to_b
+
+        # The general idea is that every endpoint is resolved to a model variable
+        # When we're connecting ports, all we have to do is assert equality: The signal on the wire is the same at each end
+        # When we connect to symbolic memory, however, things get more complicated:
+        #   1. A symbol may be read from or written to multiple times.
+        #   2. This program translates the input into a new program where each write creates a new variable
+        def _resolve3(conn):
+            assert(isinstance(conn, WireConnection))
+            if isinstance(conn, IdentConnection):
+                access = code.accesses[conn.target_uid]
+                print(f'Connection {conn} is a memory access: {access}')
+                # 3 types of memory access right now:
+                if isinstance(access, SymbolConstantAccess):
+                    assert(False)
+                elif isinstance(access, LiteralConstantAccess):
+                    return access.value
+                elif isinstance(access, SymbolAccess):
+                    if access.scope == 'LocalVariable':
+                        local: Scope = call_stack[-1]
+                        assert(access.symbol in local._variables)
+                        return MemoryAccessProxy(access.symbol, local)
+                    else:
+                        raise RuntimeError(f'Unhandled access scope: {access.scope}')
+                else:
+                    raise RuntimeError(f'Unhandled access type: {type(access)}')
+            else:
+                assert(isinstance(conn, NamedConnection))
+                part_iface: PartModel = callables[conn.target_uid]
+                print(f'Connection {conn} is a part connection: {part_iface}::{conn.target_port}')
+                port = part_iface.ports[conn.target_port]
+                return port
+
+        a = _resolve3(wire.a)
+        print(f'a = {a}')
+
+        b = _resolve3(wire.b)
+        print(f'b = {b}')
+
+        return
+
+
         # Get the variable associated with each endpoint of the wire
         resolved_a = None
         if type(wire.a) == IdentConnection:
             access = code.accesses[wire.a.target_uid]
             print(f'wire.a is a symbolic memory access: {access}')
-            # Could be a global or local access
-            scope = call_stack[-1]
-            resolved_a = scope.resolve_access(access)
-
-
         elif type(wire.a) == NamedConnection:
             print(f'wire.a is a port access: {wire.a.target_port}')
         
         resolved_b = None
         if type(wire.b) == IdentConnection:
             print(f'wire.b is a symbolic memory access: {code.accesses[wire.b.target_uid]}')
-            
         elif type(wire.b) == NamedConnection:
             print(f'wire.b is a port access: {wire.b.target_port}')
-        # resolved_a = resolve2(wire.a, code)
-        # resolved_b = resolve2(wire.b, code)
+        
 
-
-
-        write_to_a = a_is_access and resolved_b.direction == PortDirection.OUT
-        write_to_b = b_is_access and resolved_a.direction == PortDirection.OUT
-        has_write = write_to_a or write_to_b
 
         # In essence, all we want to do is connect the variable associated with
         # wire.a with the variable associated with wire.b.
@@ -187,8 +233,9 @@ def _model_program(program: Program):
     # Need to load the "main" entry point and start symbolically translating the program.
     main = program.blocks[program.entry]
 
-    ctx = []
-    _model_block(program, solver, ssa_resolver, main, ctx)
+    program_model = ProgramModel()
+    ctx = [Scope('', program_model.ctx, main)]
+    _model_block(program, program_model, ssa_resolver, main, ctx)
 
     return solver, ssa_resolver
 

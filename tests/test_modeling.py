@@ -1,5 +1,5 @@
 from fbdplc.functions import Block, Program
-from fbdplc.graph import merge_scopes
+from fbdplc.graph import merge_nets, merge_scopes
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
 import fbdplc.modeling as modeling
 import z3
@@ -162,7 +162,15 @@ def test_fc_call():
     user_and_block = parse_function_from_file('testdata/UserAnd.xml')
     program.blocks[main_block.name] = main_block
     program.blocks[user_and_block.name] = user_and_block
+
     model, ssa = modeling.program_model(program)
     # assert(len(ssa.list_variables()) == 2)
     # exec_and_compare(program, ssa, {'a': True}, {'ton': True})
     # exec_and_compare(program, ssa, {'a': False}, {'ton': False})
+
+def test_user_and():
+    program = Program('test_user_and')
+    user_and_block = parse_function_from_file('testdata/UserAnd.xml')
+    program.blocks[user_and_block.name] = user_and_block
+    program.entry = user_and_block.name
+    model, ssa = modeling.program_model(program)

@@ -150,7 +150,7 @@ class CoilPart(PartTemplate):
             model.ports[p].set_negated()
         model.instantiate_ports(context)
 
-        logic = z3.And(self._internal_model(), model.ivar('in') == model.ivar('out'))
+        logic = z3.And(self._internal_model(model), model.ivar('in') == model.ivar('out'))
         model.assertions.append(logic)
 
         return model

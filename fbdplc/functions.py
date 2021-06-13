@@ -1,7 +1,7 @@
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
-from fbdplc.graph import ScopeContext
+from fbdplc.graph import ScopeContext, VariableResolver
 import enum
 import z3
 
@@ -60,6 +60,13 @@ class BlockVariables:
             raise RuntimeError(f'Unrecognized section enum {section}')
         data_section.append((name, datatype))
 
+    def interface_variables(self):
+        v = self.input + self.output + self.inout
+        return v
+
+    def all_variables(self):
+        return self.input + self.output + self.inout + self.temp + self.constant + self.ret
+
 
 class Block:
     '''
@@ -80,10 +87,47 @@ class Block:
         self.variables = BlockVariables()  # includes constants
         self.networks = []
 
+#  new_scope = Scope(ns, program_model.ctx, next_block)
+#         models = new_scope.link_call(model)
+
+class GlobalMemory:
+    def __init__(self, ctx: z3.Context):
+        self.ctx = ctx
+        self.ssa = VariableResolver()
+        
+
 class Scope:
-    def __init__(self, block: Block):
+    def __init__(self, ns: str, ctx: z3.Context, block: Block):
+        self.ns = namespace(ns, block.name)
         self.name = block.name
-        self.variables = block.variables
+        self.variable_iface = block.variables
+
+        # Instantiate variables for this scope
+        self._variables = {}
+        self._make_variables(ctx)
+        self.ssa = VariableResolver()
+
+    def _make_variables(self, ctx: z3.Context):
+        for name, vtype in self.variable_iface.all_variables():
+            assert(vtype == bool)
+            v = z3.Bool(namespace(self.ns, name), ctx=ctx)
+            self._variables[name] = v
+
+    def var(self, name):
+        return self._variables[name]
+
+    def link_call(self, part: PartModel):
+        iface_vars = self.variable_iface.interface_variables()
+        assertions = []
+        for name, vtype in iface_vars:
+            x = part.ivar(name)
+            y = self.var(name)
+            assertions.append(x == y)
+            print(f'Linking {assertions[-1]}')
+        return assertions
+    
+
+
 
 class Call(PartTemplate):
     def __init__(self, target: str):
@@ -95,11 +139,11 @@ class Call(PartTemplate):
         self.ports: Dict[str, PartPort] = {}
         # A unique identifer for this particularly call. Needs to be statically determinable. No recursion.
         # self._block = block
-        
+
         # # Need to allocate ports
 
     def instantiate(self, ns: str, context: z3.Context, block: Block) -> PartModel:
-        instance_name = namespace(ns, self.name)
+        instance_name = namespace(ns, 'call_' + self.name)
         model = PartModel(instance_name)
         for v in block.variables.input:
             model.add_port(v[0], v[1], PortDirection.IN)
@@ -107,11 +151,9 @@ class Call(PartTemplate):
             model.add_port(v[0], v[1], PortDirection.OUT)
         for v in block.variables.inout:
             model.add_port(v[0], v[1], PortDirection.OUT)
-        
+
         for p in self.negations:
             model.ports[p].set_negated()
         model.instantiate_ports(context)
 
         return model
-
-        

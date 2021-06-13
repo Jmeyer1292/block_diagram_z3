@@ -61,13 +61,14 @@ def parse_block(tree: etree._ElementTree) -> Block:
     BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
     block_node = [b for b in root if b.tag in BLOCK_TAGS]
     assert(len(block_node) == 1)
-    print(block_node)
+    # print(block_node)
     return parse_function_block(block_node[0])
 
 
 def parse_function_block(root: etree._Element):
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
+    # print(f'PARSING {name_node}, {block_name}')
     block = Block(block_name)
     # Variables
     iface_node = [l for l in root.iter('Interface')]
@@ -88,7 +89,7 @@ def parse_function_block(root: etree._Element):
     }
 
     for section in iface_node[0]:
-        print('Section {}'.format(section))
+        # print('Section {}'.format(section))
         section_name = section.get('Name')
         section_enum = TAG_MAP[section_name]
 
@@ -100,6 +101,7 @@ def parse_function_block(root: etree._Element):
             block.variables.add(section_enum, n, TYPE_MAP[datatype])
 
     block.networks = discover_networks(root)
+    # print(f'...Finished parsing block {block_name}')
     return block
 
 
@@ -115,9 +117,13 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
     wires = list(root.iter('Wires'))
     parts = list(root.iter('Parts'))
 
+    # print(f'Considering network at {root}')
+
     context = ScopeContext(ns)
     if len(wires) == 0:
+        print('NO WIRES')
         return context
+
 
     wires = wires[0]
     parts = parts[0]
@@ -175,14 +181,13 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
 
 
 def discover_networks(tree):
+    # print(f'Discover networks: {tree}')
     networks = tree.iter('SW.Blocks.CompileUnit')
 
     result = []
     for r in networks:
-        try:
-            result.append(parse_network(r))
-        finally:
-            pass
+        # print(f'Trying compile unit: {r}')
+        result.append(parse_network(r))
     return result
 
 
@@ -249,12 +254,12 @@ def parse_from_string(text: str) -> List[ScopeContext]:
 
 def parse_function_from_file(path: str) -> Block:
     tree: etree._ElementTree = etree.parse(path)
-    return parse_block(tree)
+    return parse_block(_remove_namespaces(tree))
 
 
 def parse_function_from_text(path: str) -> Block:
     tree: etree._ElementTree = etree.fromstring(path)
-    return parse_block(tree)
+    return parse_block(_remove_namespaces(tree))
 
 
 def parse_from_string(text: str) -> List[ScopeContext]:
