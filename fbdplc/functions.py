@@ -94,24 +94,29 @@ class GlobalMemory:
     def __init__(self, ctx: z3.Context):
         self.ctx = ctx
         self.ssa = VariableResolver()
-        
+
 
 class Scope:
     def __init__(self, ns: str, ctx: z3.Context, block: Block):
         self.ns = namespace(ns, block.name)
         self.name = block.name
         self.variable_iface = block.variables
-
+        self.ctx = ctx
         # Instantiate variables for this scope
         self._variables = {}
-        self._make_variables(ctx)
         self.ssa = VariableResolver()
+
+        self._make_variables(ctx)
+        
 
     def _make_variables(self, ctx: z3.Context):
         for name, vtype in self.variable_iface.all_variables():
             assert(vtype == bool)
-            v = z3.Bool(namespace(self.ns, name), ctx=ctx)
-            self._variables[name] = v
+            # v = z3.Bool(namespace(self.ns, name), ctx=ctx)
+            # self._variables[name] = v
+            uname = self.ssa.read(name)
+            handle = namespace(self.ns, uname)
+            self._variables[uname] = z3.Bool(handle, ctx=ctx)
 
     def var(self, name):
         return self._variables[name]
@@ -126,6 +131,21 @@ class Scope:
             print(f'Linking {assertions[-1]}')
         return assertions
     
+    def read(self, name: str):
+        # Read the latest intermediate variable name
+        # Make sure the base name exists
+        unique_name = self.ssa.read(name)
+        return self._variables[unique_name]
+    
+    def write(self, name: str):
+        assert name in self.ssa.list_variables()
+        uname = self.ssa.write(name)
+        handle = namespace(self.ns, uname)
+        v = z3.Bool(handle, ctx=self.ctx)
+        self._variables[uname] = v
+        return v
+    
+
 
 
 

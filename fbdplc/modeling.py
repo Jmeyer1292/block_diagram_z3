@@ -77,7 +77,9 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
         # associated with that scope are available in the eval of the block and are also
         # connected to the input/output variables.
         new_scope = Scope(ns, program_model.ctx, next_block)
-        models = new_scope.link_call(model)
+        
+        # TODO(Jmeyer): Linking is super broken
+        # models = new_scope.link_call(model)
         
         _model_block(program, program_model, ssa, next_block, call_stack + [new_scope])
 
@@ -90,10 +92,6 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
         b_is_access = type(wire.b) == IdentConnection
         assert(not(a_is_access and b_is_access))
 
-        # write_to_a = a_is_access and resolved_b.direction == PortDirection.OUT
-        # write_to_b = b_is_access and resolved_a.direction == PortDirection.OUT
-        # has_write_to_mem = write_to_a or write_to_b
-
         # The general idea is that every endpoint is resolved to a model variable
         # When we're connecting ports, all we have to do is assert equality: The signal on the wire is the same at each end
         # When we connect to symbolic memory, however, things get more complicated:
@@ -103,7 +101,7 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
             assert(isinstance(conn, WireConnection))
             if isinstance(conn, IdentConnection):
                 access = code.accesses[conn.target_uid]
-                print(f'Connection {conn} is a memory access: {access}')
+                # print(f'Connection {conn} is a memory access: {access}')
                 # 3 types of memory access right now:
                 if isinstance(access, SymbolConstantAccess):
                     assert(False)
@@ -112,7 +110,9 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
                 elif isinstance(access, SymbolAccess):
                     if access.scope == 'LocalVariable':
                         local: Scope = call_stack[-1]
-                        assert(access.symbol in local._variables)
+                        # assert(access.symbol in local._variables)
+                        # print(f'{local._variables}')
+                        # print(f'{access.symbol}')
                         return MemoryAccessProxy(access.symbol, local)
                     else:
                         raise RuntimeError(f'Unhandled access scope: {access.scope}')
@@ -121,84 +121,77 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
             else:
                 assert(isinstance(conn, NamedConnection))
                 part_iface: PartModel = callables[conn.target_uid]
-                print(f'Connection {conn} is a part connection: {part_iface}::{conn.target_port}')
+                # print(f'Connection {conn} is a part connection: {part_iface}::{conn.target_port}')
                 port = part_iface.ports[conn.target_port]
                 return port
 
         a = _resolve3(wire.a)
-        print(f'a = {a}')
+        # print(f'a = {a}')
 
         b = _resolve3(wire.b)
-        print(f'b = {b}')
+        # print(f'b = {b}')
 
-        return
+        write_to_a = a_is_access and b.direction == PortDirection.OUT
+        write_to_b = b_is_access and a.direction == PortDirection.OUT
+        has_write_to_mem = write_to_a or write_to_b
 
-
-        # Get the variable associated with each endpoint of the wire
-        resolved_a = None
-        if type(wire.a) == IdentConnection:
-            access = code.accesses[wire.a.target_uid]
-            print(f'wire.a is a symbolic memory access: {access}')
-        elif type(wire.a) == NamedConnection:
-            print(f'wire.a is a port access: {wire.a.target_port}')
+        def get_var(resolvable):
+            if isinstance(resolvable, MemoryAccessProxy):
+                scope: Scope = resolvable.scope
+                return scope.read(resolvable.name)
+            elif isinstance(resolvable, PartPort):
+                return resolvable.external_var()
+            else:
+                return resolvable
         
-        resolved_b = None
-        if type(wire.b) == IdentConnection:
-            print(f'wire.b is a symbolic memory access: {code.accesses[wire.b.target_uid]}')
-        elif type(wire.b) == NamedConnection:
-            print(f'wire.b is a port access: {wire.b.target_port}')
+        def get_writeable(resolvable):
+            if isinstance(resolvable, MemoryAccessProxy):
+                scope: Scope = resolvable.scope
+                return scope.write(resolvable.name)
+            else:
+                return get_var(resolvable)
         
+        if not has_write_to_mem:
+            a_var = get_var(a)
+            b_var = get_var(b)
+            program_model.assertions.append(a_var == b_var)
+        else:
+            the_access = None
+            the_port = None
+            the_part = None
+            if a_is_access:
+                the_access = a
+                the_port = b
+                the_part: PartModel = callables[wire.b.target_uid]
+                the_port_name = wire.b.target_port
+            else:
+                the_access = b
+                the_port = a
+                the_part: PartModel = callables[wire.a.target_uid]
+                the_port_name = wire.a.target_port
+            
+            _prev = get_var(the_access)
+            _next = get_writeable(the_access)
 
+            other = get_var(the_port)
 
-        # In essence, all we want to do is connect the variable associated with
-        # wire.a with the variable associated with wire.b.
+            program_model.assertions.append(_next == other)
 
-        # Lets say we're writing and we have A -> B
-        #   We have (A == B)
-        # Sometimes we have to model side effects on memory. Some parts, like RCoil, may
-        # as a side effect write to memory or it may not. However, our z3 model is purely
-        # functional: we must always write. To deal with this, parts with outputs
-        # automatically get a special input variable. 
-        #   (Prev(A) == B)
-
-
-       
-        if has_write:
-            dst_name = resolved_a if a_is_access else resolved_b
-            prev = z3.Bool(ssa.read(dst_name.symbol))
-            next = z3.Bool(ssa.write(dst_name.symbol))
+            old = f'_old_{the_port_name}'
+            if old in the_part.ports:
+                old_port = the_part.evar(old)
+                a = _prev == old_port
+                print(f'Adding {a}')
+                program_model.assertions.append(a)
+            else:
+                print(f'Mem write does not have associated old part {old}, part: {the_part}')
 
             # we want to connect to the port name and the special
             # _old_port_name ports.
-            part = get_part(wire.a) if write_to_b else get_part(wire.b)
-            port_name = wire.a.target_port if write_to_b else wire.b.target_port
-            prev_var = part.evar(f'_old_{port_name}')
-            next_var = part.evar(port_name)
+    print('Done w/ Block')
 
-            solver.add(prev_var == prev)
-            solver.add(next_var == next)
-        else:
-            a = resolve(wire.a, code)
-            b = resolve(wire.b, code)
 
-            if isinstance(a, Access):
-                if isinstance(a, (SymbolAccess, SymbolConstantAccess)):
-                    a_var = z3.Bool(ssa.read(a.symbol))
-                elif isinstance(a, LiteralConstantAccess):
-                    a_var = a.value
-            else:
-                a_var = a.external_var()
-
-            if isinstance(b, Access):
-                if isinstance(b, (SymbolAccess, SymbolConstantAccess)):
-                    b_var = z3.Bool(ssa.read(b.symbol))
-                elif isinstance(b, LiteralConstantAccess):
-                    b_var = b.value
-            else:
-                b_var = b.external_var()
-
-            solver.add(a_var == b_var)
-
+        
 
 def _model_program(program: Program):
     '''
@@ -236,6 +229,11 @@ def _model_program(program: Program):
     program_model = ProgramModel()
     ctx = [Scope('', program_model.ctx, main)]
     _model_block(program, program_model, ssa_resolver, main, ctx)
+
+    print('Program Model Finished')
+    for a in program_model.assertions:
+        print(a)
+        print('--')
 
     return solver, ssa_resolver
 

@@ -158,7 +158,9 @@ def test_fc_call():
     program = Program('test_fc_call')
     main_block = Block('main')
     main_block.networks.append(parse_from_file('testdata/fc_call.xml')[0])
-    
+    main_block.variables.temp = [('a', bool), ('b', bool), ('ton', bool)]
+
+
     user_and_block = parse_function_from_file('testdata/UserAnd.xml')
     program.blocks[main_block.name] = main_block
     program.blocks[user_and_block.name] = user_and_block
