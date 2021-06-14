@@ -7,10 +7,12 @@ from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver, merge_nets, merge_scopes
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
+
 class ProgramModel:
     def __init__(self):
         self.assertions = []
         self.ctx = z3.Context()
+
 
 def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, Access]:
     if type(endpoint) == IdentConnection:
@@ -33,12 +35,14 @@ def resolve2(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort,
 
         return part.port(endpoint.target_port)
 
+
 class MemoryAccessProxy:
     def __init__(self, name, scope):
         self.name, self.scope = name, scope
-    
+
     def __str__(self):
         return f'MemoryAccessProxy({self.name} from {self.scope})'
+
 
 def _model_block(program: Program, program_model: ProgramModel, ssa: VariableResolver, block: Block, call_stack: List):
     print(f'Considering block {block.name} w/ call_stack {call_stack}')
@@ -51,13 +55,13 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
     # Each entity within a scope has a 'uid' associated with it. This uid is unique only to
     # the scope it is contained within.
     code = merge_nets(block.networks)
-    
+
     # Build a dictionary of instantiated parts
     callables = {}
-    # So the algorithm is loop over the parts and instantiate them from our block template:  
+    # So the algorithm is loop over the parts and instantiate them from our block template:
     print('--Parts--')
     for uid, part_template in code.parts.items():
-        model : PartModel = part_template.instantiate(ns, program_model.ctx)
+        model: PartModel = part_template.instantiate(ns, program_model.ctx)
         callables[uid] = model
         program_model.assertions.extend(model.assertions)
 
@@ -70,14 +74,16 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
         # The interface to a function call in THIS scope.
         # Acts as a sort of user defined "part" that can be connected to via ports like any of
         # the primitives.
-        model = call.instantiate(namespace(ns, uid), program_model.ctx, next_block)
+        model = call.instantiate(
+            namespace(ns, uid), program_model.ctx, next_block)
         callables[uid] = model
 
         # The act of calling a function creates a new scope in which the block variables
         # associated with that scope are available in the eval of the block and are also
         # connected to the input/output variables.
         new_scope = Scope(ns, program_model.ctx, next_block)
-        _model_block(program, program_model, ssa, next_block, call_stack + [new_scope])
+        _model_block(program, program_model, ssa,
+                     next_block, call_stack + [new_scope])
         link_assertions = new_scope.link_call(model)
         program_model.assertions.extend(link_assertions)
 
@@ -113,9 +119,11 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
                         # print(f'{access.symbol}')
                         return MemoryAccessProxy(access.symbol, local)
                     else:
-                        raise RuntimeError(f'Unhandled access scope: {access.scope}')
+                        raise RuntimeError(
+                            f'Unhandled access scope: {access.scope}')
                 else:
-                    raise RuntimeError(f'Unhandled access type: {type(access)}')
+                    raise RuntimeError(
+                        f'Unhandled access type: {type(access)}')
             else:
                 assert(isinstance(conn, NamedConnection))
                 part_iface: PartModel = callables[conn.target_uid]
@@ -141,14 +149,14 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
                 return resolvable.external_var()
             else:
                 return resolvable
-        
+
         def get_writeable(resolvable):
             if isinstance(resolvable, MemoryAccessProxy):
                 scope: Scope = resolvable.scope
                 return scope.write(resolvable.name)
             else:
                 return get_var(resolvable)
-        
+
         if not has_write_to_mem:
             a_var = get_var(a)
             b_var = get_var(b)
@@ -167,7 +175,7 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
                 the_port = a
                 the_part: PartModel = callables[wire.a.target_uid]
                 the_port_name = wire.a.target_port
-            
+
             _prev = get_var(the_access)
             _next = get_writeable(the_access)
 
@@ -182,14 +190,13 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
                 print(f'Adding {a}')
                 program_model.assertions.append(a)
             else:
-                print(f'Mem write does not have associated old part {old}, part: {the_part}')
+                print(
+                    f'Mem write does not have associated old part {old}, part: {the_part}')
 
             # we want to connect to the port name and the special
             # _old_port_name ports.
     print('Done w/ Block')
 
-
-        
 
 def _model_program(program: Program):
     '''
@@ -236,84 +243,6 @@ def _model_program(program: Program):
     return solver, ssa_resolver
 
 
-def program_model(context):
-    if isinstance(context, Program):
-        return _model_program(context)
-
-    solver = z3.Solver()
-    ssa_resolver = VariableResolver()
-
-    # Iterate over each part:
-    #   declare input and output port names,
-    #   declare assertions for inner logic
-
-    for uid, part in context.parts.items():
-        ex = part.model()
-        # print(part)
-        if ex is not None:
-            # print(f'Adding {ex}')
-            solver.add(ex)
-
-    for uid, c in context.calls.items():
-        print(f'Adding model for {uid} {c.target}')
-
-    # Iterate over each wire
-    for uid, wire in context.wires.items():
-        # A variable read needs to be translated to the SSA form
-
-        # A variable write also needs the SSA form translation
-        # and we have some special case handling inside the coil object
-
-        a_is_access = type(wire.a) == IdentConnection
-        b_is_access = type(wire.b) == IdentConnection
-        is_access = a_is_access or b_is_access
-        assert(not(a_is_access and b_is_access))
-
-        resolved_a = resolve(wire.a, context)
-        resolved_b = resolve(wire.b, context)
-
-        write_t_a = a_is_access and resolved_b.direction == PortDirection.OUT
-        write_t_b = b_is_access and resolved_a.direction == PortDirection.OUT
-        has_write = write_t_a or write_t_b
-
-        def get_part(conn):
-            assert(type(conn) == NamedConnection)
-            return context.parts[conn.target_uid]
-
-        if has_write:
-            dst_name = resolved_a if a_is_access else resolved_b
-            prev = z3.Bool(ssa_resolver.read(dst_name.symbol))
-            next = z3.Bool(ssa_resolver.write(dst_name.symbol))
-
-            # we want to connect to the port name and the special
-            # _old_port_name ports.
-            part = get_part(wire.a) if write_t_b else get_part(wire.b)
-            port_name = wire.a.target_port if write_t_b else wire.b.target_port
-            prev_var = part.evar(f'_old_{port_name}')
-            next_var = part.evar(port_name)
-
-            solver.add(prev_var == prev)
-            solver.add(next_var == next)
-        else:
-            a = resolve(wire.a, context)
-            b = resolve(wire.b, context)
-
-            if isinstance(a, Access):
-                if isinstance(a, (SymbolAccess, SymbolConstantAccess)):
-                    a_var = z3.Bool(ssa_resolver.read(a.symbol))
-                elif isinstance(a, LiteralConstantAccess):
-                    a_var = a.value
-            else:
-                a_var = a.external_var()
-
-            if isinstance(b, Access):
-                if isinstance(b, (SymbolAccess, SymbolConstantAccess)):
-                    b_var = z3.Bool(ssa_resolver.read(b.symbol))
-                elif isinstance(b, LiteralConstantAccess):
-                    b_var = b.value
-            else:
-                b_var = b.external_var()
-
-            solver.add(a_var == b_var)
-
-    return solver, ssa_resolver
+def program_model(context: Program):
+    assert isinstance(context, Program)
+    return _model_program(context)

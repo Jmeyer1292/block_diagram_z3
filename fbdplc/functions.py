@@ -90,6 +90,7 @@ class Block:
 #  new_scope = Scope(ns, program_model.ctx, next_block)
 #         models = new_scope.link_call(model)
 
+
 class GlobalMemory:
     def __init__(self, ctx: z3.Context):
         self.ctx = ctx
@@ -107,7 +108,6 @@ class Scope:
         self.ssa = VariableResolver()
 
         self._make_variables(ctx)
-        
 
     def _make_variables(self, ctx: z3.Context):
         for name, vtype in self.variable_iface.all_variables():
@@ -132,23 +132,24 @@ class Scope:
             n = self.ssa.read(name, 0)
             y = self._variables[n]
             assertions.append(x == y)
-        
+
         for name, vtype in self.variable_iface.output:
             x = part.ivar(name)
             n = self.read(name)
             assertions.append(x == y)
-        
+
         for name, vtype in self.variable_iface.inout:
-            pass
+            raise NotImplementedError(
+                'in-out variables in a called block interface')
 
         return assertions
-    
+
     def read(self, name: str):
         # Read the latest intermediate variable name
         # Make sure the base name exists
         unique_name = self.ssa.read(name)
         return self._variables[unique_name]
-    
+
     def write(self, name: str):
         assert name in self.ssa.list_variables()
         uname = self.ssa.write(name)
@@ -156,9 +157,6 @@ class Scope:
         v = z3.Bool(handle, ctx=self.ctx)
         self._variables[uname] = v
         return v
-    
-
-
 
 
 class Call(PartTemplate):
