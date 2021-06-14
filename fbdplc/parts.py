@@ -8,15 +8,15 @@ class PortDirection(Enum):
     IN = 1
     OUT = 2
 
-# Siemens appears to associate the "negation" of a boolean
-# signal not with a separate, NOT gate but instead with a
-# given part port.
-#
-# I'm going to try to stay consistent for the moment, so some
-# ports may have 2 variables internally.
-
 
 class PartPort:
+    # Siemens appears to associate the "negation" of a boolean
+    # signal not with a separate, NOT gate but instead with a
+    # given part port.
+
+    # I'm going to try to stay consistent for the moment, so some
+    # ports may have 2 variables internally.
+
     def __init__(self, name: str, port_type: type, direction: PortDirection):
         self.name = name
         self.port_type = port_type
@@ -25,7 +25,7 @@ class PartPort:
         # internal & external variables
         self._var = None
         self._negated = None
-    
+
     def instantiate(self, ctx: z3.Context):
         self._var = z3.Bool(self.name, ctx=ctx)
         if self.is_negated:
@@ -57,12 +57,13 @@ class PartPort:
         else:
             return [self._negated == z3.Not(self._var)]
 
+
 class PartModel:
     def __init__(self, name):
         self.name = name
         self.assertions = []
-        self.ports : Dict[str, PartPort] = {}
-    
+        self.ports: Dict[str, PartPort] = {}
+
     def add_port(self, name: str, port_type: type, dir: PortDirection):
         self.ports[name] = PartPort(namespace(self.name, name), port_type, dir)
 
@@ -73,22 +74,22 @@ class PartModel:
             port_model = p.model()
             model.extend(port_model)
         self.assertions.extend(model)
-        
 
     def ivar(self, port_name: str):
         return self.ports[port_name].internal_var()
-    
+
     def evar(self, port_name: str):
         return self.ports[port_name].external_var()
+
 
 class PartTemplate:
     def __init__(self, name: str):
         self.name = name
         self.negations = set()
-    
+
     def instantiate(self, namespace, context: z3.Context) -> PartModel:
         ''' Returns a unique program model '''
-        pass
+        raise NotImplementedError()
 
     def add_negation(self, port_name: str):
         self.negations.add(port_name)
@@ -109,10 +110,12 @@ class OrPart(PartTemplate):
             model.ports[p].set_negated()
         model.instantiate_ports(context)
 
-        or_expr = z3.Or([model.ivar(f'in{i}') for i in range(1, self.dimension + 1)])
+        or_expr = z3.Or([model.ivar(f'in{i}')
+                        for i in range(1, self.dimension + 1)])
 
         model.assertions.append(or_expr == model.ivar('out'))
         return model
+
 
 class AndPart(PartTemplate):
     def __init__(self, name, n: int):
@@ -129,9 +132,11 @@ class AndPart(PartTemplate):
             model.ports[p].set_negated()
         model.instantiate_ports(context)
 
-        and_expr = z3.And([model.ivar(f'in{i}') for i in range(1, self.dimension + 1)])
+        and_expr = z3.And([model.ivar(f'in{i}')
+                          for i in range(1, self.dimension + 1)])
         model.assertions.append(and_expr == model.ivar('out'))
         return model
+
 
 class CoilPart(PartTemplate):
     def __init__(self, name, port_type=bool, coil_type: str = 'Coil'):
@@ -150,7 +155,8 @@ class CoilPart(PartTemplate):
             model.ports[p].set_negated()
         model.instantiate_ports(context)
 
-        logic = z3.And(self._internal_model(model), model.ivar('in') == model.ivar('out'))
+        logic = z3.And(self._internal_model(model),
+                       model.ivar('in') == model.ivar('out'))
         model.assertions.append(logic)
 
         return model
@@ -168,7 +174,6 @@ class CoilPart(PartTemplate):
             return z3.If(model.ivar('in'), model.ivar('operand') == False, model.ivar('operand') == model.ivar('_old_operand'))
 
         raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
-
 
 
 # class Part:

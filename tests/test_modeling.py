@@ -5,7 +5,7 @@ import fbdplc.modeling as modeling
 import z3
 
 
-def symbolic_execution(program: z3.Solver, ssa: modeling.VariableResolver, inputs):
+def symbolic_execution(program: z3.Solver, ssa, inputs):
     input_constraints = []
     for key, value in inputs.items():
         input_constraints.append(z3.Bool(ssa.read(key, 0)) == value)
@@ -19,7 +19,7 @@ def symbolic_execution(program: z3.Solver, ssa: modeling.VariableResolver, input
         program.pop()
 
 
-def memory_dict(model: z3.ModelRef, ssa: modeling.VariableResolver):
+def memory_dict(model: z3.ModelRef, ssa):
     mem = {}
     for k in ssa.list_variables():
         b: bool = model.eval(z3.Bool(ssa.read(k)))
@@ -27,7 +27,7 @@ def memory_dict(model: z3.ModelRef, ssa: modeling.VariableResolver):
     return mem
 
 
-def exec_and_compare(program: z3.Solver, ssa: modeling.VariableResolver, inputs, expected_outputs):
+def exec_and_compare(program: z3.Solver, ssa, inputs, expected_outputs):
     model = symbolic_execution(program, ssa, inputs)
     mem = memory_dict(model, ssa)
 

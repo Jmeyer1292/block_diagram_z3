@@ -87,9 +87,6 @@ class Block:
         self.variables = BlockVariables()  # includes constants
         self.networks = []
 
-#  new_scope = Scope(ns, program_model.ctx, next_block)
-#         models = new_scope.link_call(model)
-
 
 class GlobalMemory:
     def __init__(self, ctx: z3.Context):
@@ -122,7 +119,6 @@ class Scope:
         return self._variables[name]
 
     def link_call(self, part: PartModel):
-        iface_vars = self.variable_iface.interface_variables()
         assertions = []
 
         # Each input is linked to the $0 instance of the variable

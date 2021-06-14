@@ -1,4 +1,6 @@
 import functools
+from typing import List
+
 
 class ScopeContext:
     def __init__(self, name=''):
@@ -57,5 +59,6 @@ def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:
 
     return result
 
-def merge_nets(nets):
+
+def merge_nets(nets: List[ScopeContext]):
     return functools.reduce(merge_scopes, nets)

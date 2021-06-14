@@ -19,7 +19,7 @@ class SymbolAccess(Access):
     def __init__(self, scope, symbol: str):
         self.scope = scope
         self.symbol = symbol
-    
+
     def __str__(self):
         return f'SymbolAccess("{self.symbol}", scope={self.scope})'
 
@@ -28,12 +28,15 @@ class SymbolConstantAccess(Access):
     def __init__(self, scope, symbol: str):
         self.scope = scope
         self.symbol = symbol
+
     def __str__(self):
         return f'SymbolConstantAccess("{self.symbol}")'
+
 
 class LiteralConstantAccess(Access):
     def __init__(self, value):
         self.value = value
         self.ltype = type(value)
+
     def __str__(self):
         return f'LiteralAccess({self.ltype}({self.value}))'
