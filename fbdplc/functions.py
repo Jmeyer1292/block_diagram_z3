@@ -124,11 +124,23 @@ class Scope:
     def link_call(self, part: PartModel):
         iface_vars = self.variable_iface.interface_variables()
         assertions = []
-        for name, vtype in iface_vars:
+
+        # Each input is linked to the $0 instance of the variable
+        # Each output is linked to the last instance
+        for name, vtype in self.variable_iface.input:
             x = part.ivar(name)
-            y = self.var(name)
+            n = self.ssa.read(name, 0)
+            y = self._variables[n]
             assertions.append(x == y)
-            print(f'Linking {assertions[-1]}')
+        
+        for name, vtype in self.variable_iface.output:
+            x = part.ivar(name)
+            n = self.read(name)
+            assertions.append(x == y)
+        
+        for name, vtype in self.variable_iface.inout:
+            pass
+
         return assertions
     
     def read(self, name: str):

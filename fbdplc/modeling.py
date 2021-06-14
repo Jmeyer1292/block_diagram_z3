@@ -77,11 +77,9 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
         # associated with that scope are available in the eval of the block and are also
         # connected to the input/output variables.
         new_scope = Scope(ns, program_model.ctx, next_block)
-        
-        # TODO(Jmeyer): Linking is super broken
-        # models = new_scope.link_call(model)
-        
         _model_block(program, program_model, ssa, next_block, call_stack + [new_scope])
+        link_assertions = new_scope.link_call(model)
+        program_model.assertions.extend(link_assertions)
 
     # Then wire it all up.
     # The wires define the program execution order, so translation to something akin to SSA
