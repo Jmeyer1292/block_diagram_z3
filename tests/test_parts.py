@@ -1,4 +1,4 @@
-from fbdplc.parts import AndPart, CoilPart, OrPart, PartModel
+from fbdplc.parts import AndPart, CoilPart, OrPart, PartModel, PartPort, PortDirection
 import z3
 
 
@@ -37,6 +37,18 @@ def test_bad_model():
 
 def prev(name: str) -> str:
     return f'_old_{name}'
+
+
+def test_port():
+    p = PartPort('foo', port_type=bool, direction=PortDirection.IN)
+    ctx = z3.Context()
+    p.instantiate(ctx)
+    assert len(p.model()) == 0
+
+    p = PartPort('bar', port_type=bool, direction=PortDirection.IN)
+    p.set_negated()
+    p.instantiate(ctx)
+    assert len(p.model()) == 1
 
 
 def test_or():
