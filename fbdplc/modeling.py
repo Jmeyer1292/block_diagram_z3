@@ -3,8 +3,8 @@ from fbdplc.functions import Block, Call, Program, Scope
 from typing import List, Union
 import z3
 from fbdplc.parts import CoilPart, PartModel, PartPort, PortDirection
-from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
-from fbdplc.graph import ScopeContext, VariableResolver, merge_nets, merge_scopes
+from fbdplc.wires import IdentConnection, NamedConnection, WireConnection
+from fbdplc.graph import ScopeContext, merge_nets
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
 
@@ -12,28 +12,6 @@ class ProgramModel:
     def __init__(self):
         self.assertions = []
         self.ctx = z3.Context()
-
-
-def resolve(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, Access]:
-    if type(endpoint) == IdentConnection:
-        return context.accesses[endpoint.target_uid]
-    else:
-        return context.parts[endpoint.target_uid].port(endpoint.target_port)
-
-
-def resolve2(endpoint: WireConnection, context: ScopeContext) -> Union[PartPort, Access]:
-    if type(endpoint) == IdentConnection:
-        return context.accesses[endpoint.target_uid]
-    elif type(endpoint) == NamedConnection:
-        # We're connecting to a port on a Part or Call:
-        part = context.parts.get(endpoint.target_uid)
-        if part is None:
-            part = context.calls.get(endpoint.target_uid)
-            if part is None:
-                raise RuntimeError(
-                    f'Unable to resolve named port reference {endpoint.target_uid}')
-
-        return part.port(endpoint.target_port)
 
 
 class MemoryAccessProxy:
@@ -44,7 +22,7 @@ class MemoryAccessProxy:
         return f'MemoryAccessProxy({self.name} from {self.scope})'
 
 
-def _model_block(program: Program, program_model: ProgramModel, ssa: VariableResolver, block: Block, call_stack: List):
+def _model_block(program: Program, program_model: ProgramModel, block: Block, call_stack: List):
     print(f'Considering block {block.name} w/ call_stack {call_stack}')
     # TODO(Jmeyer): Reduce the current call_stack to a namespace that makes each variable in this scope unique
     ns = '$'.join([c.name for c in call_stack])
@@ -82,8 +60,8 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
         # associated with that scope are available in the eval of the block and are also
         # connected to the input/output variables.
         new_scope = Scope(ns, program_model.ctx, next_block)
-        _model_block(program, program_model, ssa,
-                     next_block, call_stack + [new_scope])
+        _model_block(program, program_model, next_block,
+                     call_stack + [new_scope])
         link_assertions = new_scope.link_call(model)
         program_model.assertions.extend(link_assertions)
 
@@ -198,51 +176,12 @@ def _model_block(program: Program, program_model: ProgramModel, ssa: VariableRes
     print('Done w/ Block')
 
 
-def _model_program(program: Program):
-    '''
-    Walks the program call tree. At each function boundary, it generates a new context.
-
-    The context is used to instantiate models:
-        for p in scope.parts:
-            # parts are terminal, no need to recurse
-            model = p.instantiate(context)
-
-        for c in scope.calls:
-            block = program[c]
-            next_context = make_new_context(c, block)
-            iterate(block, context + next_context) 
-
-
-
-        The parts in the scope are unique to that scope. When we combine scopes with a single
-        function, they will also be unique.
-
-    The context is used to verify accesses:
-
-    The context is used to check for recursion:
-
-
-
-    '''
-    print('Model program')
-    solver = z3.Solver()
-    ssa_resolver = VariableResolver()
-
+def program_model(program: Program):
+    assert isinstance(program, Program)
     # Need to load the "main" entry point and start symbolically translating the program.
     main = program.blocks[program.entry]
 
     program_model = ProgramModel()
     ctx = [Scope('', program_model.ctx, main)]
-    _model_block(program, program_model, ssa_resolver, main, ctx)
-
-    print('Program Model Finished')
-    for a in program_model.assertions:
-        print(a)
-        print('--')
-
-    return solver, ssa_resolver
-
-
-def program_model(context: Program):
-    assert isinstance(context, Program)
-    return _model_program(context)
+    _model_block(program, program_model, main, ctx)
+    return program_model
