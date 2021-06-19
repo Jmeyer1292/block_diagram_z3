@@ -17,7 +17,7 @@ class VariableResolver:
 
     @staticmethod
     def ir_name(name: str, access_no: int) -> str:
-        return f'{name}_${access_no}'
+        return f'{name}#{access_no}'
 
     def list_variables(self):
         return [k for k in self.data]

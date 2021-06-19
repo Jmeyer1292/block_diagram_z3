@@ -140,10 +140,10 @@ class Scope:
 
         return assertions
 
-    def read(self, name: str):
+    def read(self, name: str, index = None):
         # Read the latest intermediate variable name
         # Make sure the base name exists
-        unique_name = self.ssa.read(name)
+        unique_name = self.ssa.read(name, index)
         return self._variables[unique_name]
 
     def write(self, name: str):

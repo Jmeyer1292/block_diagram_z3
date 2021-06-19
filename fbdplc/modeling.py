@@ -12,6 +12,9 @@ class ProgramModel:
     def __init__(self):
         self.assertions = []
         self.ctx = z3.Context()
+        # We need some kind of static call graph for users to write assertions against
+        # or we need to accumulate annotations from the code itself.
+        self.root : Scope = None
 
 
 class MemoryAccessProxy:
@@ -182,6 +185,7 @@ def program_model(program: Program):
     main = program.blocks[program.entry]
 
     program_model = ProgramModel()
-    ctx = [Scope('', program_model.ctx, main)]
-    _model_block(program, program_model, main, ctx)
+    call_stack = [Scope('', program_model.ctx, main)]
+    program_model.root = call_stack[0]
+    _model_block(program, program_model, main, call_stack)
     return program_model
