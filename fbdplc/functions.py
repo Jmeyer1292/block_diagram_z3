@@ -136,7 +136,7 @@ class Scope:
         for name, vtype in self.variable_iface.output:
             x = part.ivar(name)
             n = self.read(name)
-            assertions.append(x == y)
+            assertions.append(x == n)
 
         for name, vtype in self.variable_iface.inout:
             raise NotImplementedError(
@@ -173,7 +173,7 @@ class Call(PartTemplate):
         # # Need to allocate ports
 
     def instantiate(self, ns: str, context: z3.Context, block: Block) -> PartModel:
-        instance_name = namespace(ns, 'call_' + self.name)
+        instance_name = f'{ns}__call_{self.name}'
         model = PartModel(instance_name)
         for v in block.variables.input:
             model.add_port(v[0], v[1], PortDirection.IN)

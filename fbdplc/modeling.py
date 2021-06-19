@@ -14,7 +14,7 @@ class ProgramModel:
         self.ctx = z3.Context()
         # We need some kind of static call graph for users to write assertions against
         # or we need to accumulate annotations from the code itself.
-        self.root : Scope = None
+        self.root: Scope = None
 
 
 class MemoryAccessProxy:
@@ -26,9 +26,10 @@ class MemoryAccessProxy:
 
 
 def _model_block(program: Program, program_model: ProgramModel, block: Block, call_stack: List):
+    ns = call_stack[-1].ns
     print(f'Considering block {block.name} w/ call_stack {call_stack}')
-    # TODO(Jmeyer): Reduce the current call_stack to a namespace that makes each variable in this scope unique
-    ns = '$'.join([c.name for c in call_stack])
+    print(f'This block has the following scope/namespace: {ns}')
+
     # A block consists of an ordered sequence of networks.
     # Each network could potentially call into other blocks, in which case the translator
     # recursively descends into them and generates a model.
@@ -56,7 +57,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         # Acts as a sort of user defined "part" that can be connected to via ports like any of
         # the primitives.
         model = call.instantiate(
-            namespace(ns, uid), program_model.ctx, next_block)
+            f'{ns}:({uid})', program_model.ctx, next_block)
         callables[uid] = model
 
         # The act of calling a function creates a new scope in which the block variables
