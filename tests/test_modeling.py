@@ -15,7 +15,6 @@ def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solve
         v = program.root.read(key)
         input_constraints.append(v == value)
 
-
     solver.push()
     solver.add(z3.And(input_constraints))
     assert(solver.check() == z3.sat)
@@ -34,7 +33,6 @@ def memory_dict(model: z3.ModelRef, scope: Scope):
 def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outputs):
     _, model = symbolic_execution(program_model, inputs)
     mem = memory_dict(model, program_model.root)
-    
 
     for o in expected_outputs:
         if not (mem[o] == expected_outputs[o]):
@@ -154,11 +152,6 @@ def test_fc_call():
     UserAnd(a=a, b=a, a_and_b => ton)
     '''
 
-    # I suppose the desired interface here would be that we pass in a list of files and they are all
-    # parsed into some "Program" object that has context about all of it.
-    #
-    # So in this case we can load the net from fc_call (maybe I should change these to be valid programs),
-    # and we'd load UserAnd.xml as well.
     program = Program('test_fc_call')
     main_block = Block('main')
     main_block.networks.append(parse_from_file('testdata/fc_call.xml')[0])
@@ -168,10 +161,11 @@ def test_fc_call():
     program.blocks[main_block.name] = main_block
     program.blocks[user_and_block.name] = user_and_block
 
-    model, ssa = modeling.program_model(program)
-    # assert(len(ssa.list_variables()) == 2)
-    # exec_and_compare(program, ssa, {'a': True}, {'ton': True})
-    # exec_and_compare(program, ssa, {'a': False}, {'ton': False})
+    program_model = modeling.program_model(program)
+    exec_and_compare(program_model, {'a': True, 'b': True}, {'ton': True})
+    exec_and_compare(program_model, {'a': True, 'b': False}, {'ton': True})
+    exec_and_compare(program_model, {'a': False, 'b': True}, {'ton': False})
+    exec_and_compare(program_model, {'a': False, 'b': False}, {'ton': False})
 
 
 def test_user_and():
@@ -181,10 +175,10 @@ def test_user_and():
     program.entry = user_and_block.name
     program_model = modeling.program_model(program)
 
-    solver = z3.Solver(ctx=program_model.ctx)
-    solver.add(program_model.assertions)
-
     exec_and_compare(program_model, {'a': True, 'b': True}, {'a_and_b': True})
-    exec_and_compare(program_model, {'a': True, 'b': False}, {'a_and_b': False})
-    exec_and_compare(program_model, {'a': False, 'b': True}, {'a_and_b': False})
-    exec_and_compare(program_model, {'a': False, 'b': False}, {'a_and_b': False})
+    exec_and_compare(program_model, {'a': True, 'b': False}, {
+                     'a_and_b': False})
+    exec_and_compare(program_model, {'a': False, 'b': True}, {
+                     'a_and_b': False})
+    exec_and_compare(program_model, {'a': False, 'b': False}, {
+                     'a_and_b': False})

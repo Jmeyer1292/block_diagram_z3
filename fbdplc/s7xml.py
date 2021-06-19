@@ -140,8 +140,9 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
             access = parse_access(p, ns)
             context.accesses[uid] = access
         elif p.tag == 'Part':
-            uid, part = parse_part(ns, p)
-            context.parts[namespace(ns, uid)] = part
+            this_ns = namespace(ns, p.get('UId'))
+            uid, part = parse_part(this_ns, p)
+            context.parts[this_ns] = part
         elif p.tag == 'Call':
             uid, call = parse_call(p, ns)
             context.calls[namespace(ns, uid)] = call
@@ -234,8 +235,9 @@ def parse_part(ns, node):
     }
 
     prefix = ':'.join([ns, part_type + uid])
+    name = f'({ns}){part_type}'
 
-    return uid, dispatch[part_type](prefix, node)
+    return uid, dispatch[part_type](name, node)
 
 
 def _extract_networks(tree: etree.ElementTree):
