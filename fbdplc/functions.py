@@ -95,8 +95,11 @@ class GlobalMemory:
 
 
 class Scope:
-    def __init__(self, ns: str, ctx: z3.Context, block: Block):
-        self.ns = namespace(ns, block.name)
+    def __init__(self, ns: str, uid: str, ctx: z3.Context, block: Block):
+        self.ns = f'{ns}$({uid}){block.name}'
+        print(f'Creating Scope {block.name} in {self.ns}')
+        # A unique identifier for *this* call within the given namespace, 'ns'
+        self.uid = uid
         self.name = block.name
         self.variable_iface = block.variables
         self.ctx = ctx

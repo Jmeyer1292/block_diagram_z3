@@ -62,7 +62,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         # The act of calling a function creates a new scope in which the block variables
         # associated with that scope are available in the eval of the block and are also
         # connected to the input/output variables.
-        new_scope = Scope(ns, program_model.ctx, next_block)
+        new_scope = Scope(ns, uid, program_model.ctx, next_block)
         _model_block(program, program_model, next_block,
                      call_stack + [new_scope])
         link_assertions = new_scope.link_call(model)
@@ -185,7 +185,7 @@ def program_model(program: Program):
     main = program.blocks[program.entry]
 
     program_model = ProgramModel()
-    call_stack = [Scope('', program_model.ctx, main)]
+    call_stack = [Scope('', '', program_model.ctx, main)]
     program_model.root = call_stack[0]
     _model_block(program, program_model, main, call_stack)
     return program_model
