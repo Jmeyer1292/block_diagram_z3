@@ -2,7 +2,7 @@
 from fbdplc.functions import Block, Program
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
 import fbdplc.modeling as modeling
-from fbdplc.analysis import exec_and_compare
+from fbdplc.analysis import exec_and_compare, run_assertions
 
 
 def _load_block(program: Program, target_path: str):
@@ -24,6 +24,21 @@ def test_or():
     model = modeling.program_model(program)
     exec_and_compare(model, {'ToSafety.a': True,
                      'ToSafety.b': True}, {'a_or_b': True})
+
+def test_or_assertions():
+    program = Program('test_or')
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file('testdata/simple_or.xml')[0])
+    # ToSafety.a and ToSafety.b are global variables and are, at least currently,
+    # dynamically allocated. I don't verify the structure of these.
+    main_block.variables.temp = [('a_or_b', bool)]
+    program.blocks[main_block.name] = main_block
+    program.entry = main_block.name
+
+    model = modeling.program_model(program)
+    assertions = []
+    a_or_b = model.root.read('a_or_b')
+    run_assertions(model, [], [a_or_b == True])
 
 
 # def test_set():
@@ -222,4 +237,4 @@ def test_user_add():
     program = Program('test_user_add')
     program.entry = _load_block(program, 'testdata/UserAdd.xml')
     model = modeling.program_model(program)
-    exec_and_compare(model, {'a': 0, 'b': 5}, {'result': 1})
+    exec_and_compare(model, {'a': 1, 'b': 5}, {'result': 6})
