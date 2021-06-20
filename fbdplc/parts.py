@@ -1,3 +1,4 @@
+from fbdplc.sorts import Boolean, Integer
 import z3
 from typing import Dict
 from fbdplc.utils import namespace
@@ -27,20 +28,20 @@ class PartPort:
         self._negated = None
 
     def instantiate(self, ctx: z3.Context):
-        if self.port_type == bool:
-            self._var = z3.Bool(self.name, ctx=ctx)
-        elif self.port_type == int:
-            self._var = z3.BitVec(self.name, 16, ctx=ctx)
+        if self.port_type == Boolean:
+            self._var = Boolean.make(self.name, ctx=ctx)
+        elif self.port_type == Integer:
+            self._var = Integer.make(self.name, ctx=ctx)
         else:
             raise NotImplementedError(
                 f'Cannot instantiate port {self.name} of type {self.port_type} as this type is not yet implemented')
 
         if self.is_negated:
-            assert self.port_type == bool, "Can only negate a boolean port"
-            self._negated = z3.Bool(self.name + '__neg', ctx=ctx)
+            assert self.port_type == Boolean, "Can only negate a boolean port"
+            self._negated = Boolean.make(self.name + '__neg', ctx=ctx)
 
     def set_negated(self):
-        if self.port_type != bool:
+        if self.port_type != Boolean:
             raise RuntimeError(f"Can't negate a port of type {self.port_type}")
         if self._negated is not None:
             raise RuntimeError(f'Port {self.name} already negated')
@@ -112,8 +113,8 @@ class OrPart(PartTemplate):
         instance_name = namespace(ns, self.name)
         model = PartModel(instance_name)
         for i in range(1, self.dimension + 1):
-            model.add_port(f'in{i}', bool, PortDirection.IN)
-        model.add_port('out', bool, PortDirection.OUT)
+            model.add_port(f'in{i}', Boolean, PortDirection.IN)
+        model.add_port('out', Boolean, PortDirection.OUT)
         for p in self.negations:
             model.ports[p].set_negated()
         model.instantiate_ports(context)
@@ -134,8 +135,8 @@ class AndPart(PartTemplate):
         instance_name = namespace(ns, self.name)
         model = PartModel(instance_name)
         for i in range(1, self.dimension + 1):
-            model.add_port(f'in{i}', bool, PortDirection.IN)
-        model.add_port('out', bool, PortDirection.OUT)
+            model.add_port(f'in{i}', Boolean, PortDirection.IN)
+        model.add_port('out', Boolean, PortDirection.OUT)
         for p in self.negations:
             model.ports[p].set_negated()
         model.instantiate_ports(context)
@@ -147,7 +148,7 @@ class AndPart(PartTemplate):
 
 
 class CoilPart(PartTemplate):
-    def __init__(self, name, port_type=bool, coil_type: str = 'Coil'):
+    def __init__(self, name, port_type=Boolean, coil_type: str = 'Coil'):
         super().__init__(name)
         self.coil_type = coil_type
         self.port_type = port_type

@@ -1,4 +1,5 @@
 
+from fbdplc.sorts import Boolean
 from fbdplc.functions import Block, Program
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
 import fbdplc.modeling as modeling
@@ -17,7 +18,7 @@ def test_or():
     main_block.networks.append(parse_from_file('testdata/simple_or.xml')[0])
     # ToSafety.a and ToSafety.b are global variables and are, at least currently,
     # dynamically allocated. I don't verify the structure of these.
-    main_block.variables.temp = [('a_or_b', bool)]
+    main_block.variables.temp = [('a_or_b', Boolean)]
     program.blocks[main_block.name] = main_block
     program.entry = main_block.name
 
@@ -31,7 +32,7 @@ def test_or_assertions():
     main_block.networks.append(parse_from_file('testdata/simple_or.xml')[0])
     # ToSafety.a and ToSafety.b are global variables and are, at least currently,
     # dynamically allocated. I don't verify the structure of these.
-    main_block.variables.temp = [('a_or_b', bool)]
+    main_block.variables.temp = [('a_or_b', Boolean)]
     program.blocks[main_block.name] = main_block
     program.entry = main_block.name
 
@@ -145,7 +146,7 @@ def test_fc_call():
     program = Program('test_fc_call')
     main_block = Block('main')
     main_block.networks.append(parse_from_file('testdata/fc_call.xml')[0])
-    main_block.variables.temp = [('a', bool), ('b', bool), ('ton', bool)]
+    main_block.variables.temp = [('a', Boolean), ('b', Boolean), ('ton', Boolean)]
 
     user_and_block = parse_function_from_file('testdata/UserAnd.xml')
     program.blocks[main_block.name] = main_block

@@ -3,6 +3,7 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
+from fbdplc.sorts import Boolean, SORT_MAP
 from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
 from typing import List
@@ -12,11 +13,6 @@ from fbdplc.modeling import ScopeContext
 from fbdplc.parts import AddPart, OrPart, AndPart, PartTemplate, CoilPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
-
-TYPE_MAP = {
-    'Int': int,
-    'Bool': bool
-}
 
 
 def _remove_namespaces(root):
@@ -100,7 +96,7 @@ def parse_function_block(root: etree._Element):
             datatype = member.get('Datatype')
             if datatype == 'Void':
                 continue
-            block.variables.add(section_enum, n, TYPE_MAP[datatype])
+            block.variables.add(section_enum, n, SORT_MAP[datatype])
 
     block.networks = discover_networks(root)
     # print(f'...Finished parsing block {block_name}')
@@ -216,14 +212,14 @@ def parse_and(ns, node):
 
 def parse_coil(ns, node):
     a = part_attributes(node)
-    coil = CoilPart(ns, bool, node.get('Name'))
+    coil = CoilPart(ns, Boolean, node.get('Name'))
     apply_negations(coil, a['negations'])
     return coil
 
 
 def parse_add(ns, node):
     a = part_attributes(node)
-    add = AddPart(ns, TYPE_MAP[a['type']])
+    add = AddPart(ns, SORT_MAP[a['type']])
     return add
 
 

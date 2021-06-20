@@ -1,3 +1,4 @@
+from fbdplc.sorts import Boolean, Integer
 from fbdplc.parts import AddPart, AndPart, CoilPart, OrPart, PartModel, PartPort, PortDirection
 import z3
 
@@ -40,12 +41,12 @@ def prev(name: str) -> str:
 
 
 def test_port():
-    p = PartPort('foo', port_type=bool, direction=PortDirection.IN)
+    p = PartPort('foo', port_type=Boolean, direction=PortDirection.IN)
     ctx = z3.Context()
     p.instantiate(ctx)
     assert len(p.model()) == 0
 
-    p = PartPort('bar', port_type=bool, direction=PortDirection.IN)
+    p = PartPort('bar', port_type=Boolean, direction=PortDirection.IN)
     p.set_negated()
     p.instantiate(ctx)
     assert len(p.model()) == 1
@@ -74,7 +75,7 @@ def test_coil():
 
 
 def test_scoil():
-    part = CoilPart('coil', bool, 'SCoil')
+    part = CoilPart('coil', Boolean, 'SCoil')
     _test_case(part, {'in': True, prev('operand'): False},
                {'out': True, 'operand': True})
     _test_case(part, {'in': True, prev('operand'): True},
@@ -86,7 +87,7 @@ def test_scoil():
 
 
 def test_rcoil():
-    part = CoilPart('coil', bool, 'RCoil')
+    part = CoilPart('coil', Boolean, 'RCoil')
     _test_case(part, {'in': True, prev('operand'): False},
                {'out': True, 'operand': False})
     _test_case(part, {'in': True, prev('operand'): True},
@@ -98,7 +99,7 @@ def test_rcoil():
 
 
 def test_add():
-    part = AddPart('add', port_type=int)
+    part = AddPart('add', port_type=Integer)
     _test_case(part, {'in1': 0, 'in2': 0}, {'out': 0})
     _test_case(part, {'in1': 1, 'in2': 0}, {'out': 1})
     _test_case(part, {'in1': 0, 'in2': 1}, {'out': 1})

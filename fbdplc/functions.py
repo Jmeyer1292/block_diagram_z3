@@ -1,3 +1,4 @@
+from fbdplc.sorts import Boolean, Integer
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
@@ -116,14 +117,15 @@ class Scope:
             uname = self.ssa.read(name)
             handle = namespace(self.ns, uname)
 
-            if vtype == bool: 
-                self._variables[uname] = z3.Bool(handle, ctx=ctx)
-                self._sorts[name] = bool
-            elif vtype == int:
-                self._variables[uname] = z3.BitVec(handle, 16, ctx=ctx)
-                self._sorts[name] = int
+            if vtype == Boolean:
+                self._variables[uname] = Boolean.make(handle, ctx=ctx)
+                self._sorts[name] = Boolean
+            elif vtype == Integer:
+                self._variables[uname] = Integer.make(handle, ctx=ctx)
+                self._sorts[name] = Integer
             else:
-                raise NotImplementedError(f'Variable type {vtype} not yet supported by Scope')
+                raise NotImplementedError(
+                    f'Variable type {vtype} not yet supported by Scope')
 
     def var(self, name):
         return self._variables[name]
@@ -156,11 +158,11 @@ class Scope:
             #
             #   2. Or we do the dereferencing here:
             #       f(param := variable)
-            #       
+            #
             #       scope.resolve(param) => variable
             #       if is_addressable(variable):   HALT
             #       else: scope.parent.resolve(variable)
-            
+
             # Attempt at (1)
             next_port = part.ivar(name)
             prev_port = part.ivar(f'_old_{name}')
@@ -174,7 +176,7 @@ class Scope:
 
         return assertions
 
-    def read(self, name: str, index = None):
+    def read(self, name: str, index=None):
         # Read the latest intermediate variable name
         # Make sure the base name exists
         unique_name = self.ssa.read(name, index)
@@ -185,10 +187,10 @@ class Scope:
         uname = self.ssa.write(name)
         handle = namespace(self.ns, uname)
         sort = self._sorts[name]
-        if sort == bool:
-            v = z3.Bool(handle, ctx=self.ctx)
-        elif sort == int:
-            v = z3.BitVec(handle, 16, ctx=self.ctx)
+        if sort == Boolean:
+            v = Boolean.make(handle, ctx=self.ctx)
+        elif sort == Integer:
+            v = Integer.make(handle, ctx=self.ctx)
         else:
             raise NotImplementedError('Bad type')
         self._variables[uname] = v
