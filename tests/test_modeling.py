@@ -1,50 +1,14 @@
-from typing import Tuple
-from fbdplc.functions import Block, Program, Scope
+
+from fbdplc.functions import Block, Program
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
 import fbdplc.modeling as modeling
-import z3
+from fbdplc.analysis import exec_and_compare
 
 
 def _load_block(program: Program, target_path: str):
     block = parse_function_from_file(target_path)
     program.blocks[block.name] = block
     return block.name
-
-
-def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solver, z3.ModelRef]:
-    solver = z3.Solver(ctx=program.ctx)
-    solver.add(program.assertions)
-
-    input_constraints = []
-    for key, value in inputs.items():
-        v = program.root.read(key, 0)
-        input_constraints.append(v == value)
-
-    solver.push()
-    solver.add(z3.And(input_constraints))
-    assert(solver.check() == z3.sat)
-    return solver, solver.model()
-
-
-def memory_dict(model: z3.ModelRef, scope: Scope):
-    mem = {}
-    for k in scope.ssa.list_variables():
-        v = scope.read(k)
-        b: bool = model.eval(v)
-        mem[k] = b
-    return mem
-
-
-def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outputs):
-    _, model = symbolic_execution(program_model, inputs)
-    mem = memory_dict(model, program_model.root)
-
-    for o in expected_outputs:
-        if not (mem[o] == expected_outputs[o]):
-            msg = f'EXEC error: expected var {o} to be {expected_outputs[o]} but got {mem[o]}\n'
-            msg += f'Context: {mem}\n{model}\nModel: {_}'
-            raise AssertionError(msg)
-
 
 # def test_or():
 #     net = parse_from_file('testdata/simple_or.xml')[0]
@@ -190,27 +154,26 @@ def test_user_and():
                      'a_and_b': False})
 
 
-def _make_double_and_cases():
-    cases = []
-    for a in (True, False):
-        for b in (True, False):
-            for c in (True, False):
-                for d in (True, False):
-                    i = a and b
-                    j = c and d
-                    ins = {}
-                    outs = {}
-                    ins['a'] = a
-                    ins['b'] = b
-                    ins['c'] = c
-                    ins['d'] = d
-                    outs['i'] = i
-                    outs['j'] = j
-                    cases.append((ins, outs))
-    return cases
-
-
 def test_double_and():
+    def _make_double_and_cases():
+        cases = []
+        for a in (True, False):
+            for b in (True, False):
+                for c in (True, False):
+                    for d in (True, False):
+                        i = a and b
+                        j = c and d
+                        ins = {}
+                        outs = {}
+                        ins['a'] = a
+                        ins['b'] = b
+                        ins['c'] = c
+                        ins['d'] = d
+                        outs['i'] = i
+                        outs['j'] = j
+                        cases.append((ins, outs))
+        return cases
+
     program = Program('test_double_and')
     user_and_block = parse_function_from_file('testdata/UserAnd.xml')
     double_and_block = parse_function_from_file('testdata/DoubleAnd.xml')
