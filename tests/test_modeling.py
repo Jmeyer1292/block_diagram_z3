@@ -17,7 +17,6 @@ def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solve
 
     solver.push()
     solver.add(z3.And(input_constraints))
-    print('INPUTS', z3.And(input_constraints))
     assert(solver.check() == z3.sat)
     return solver, solver.model()
 
