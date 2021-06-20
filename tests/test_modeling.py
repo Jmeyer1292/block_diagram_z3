@@ -10,15 +10,19 @@ def _load_block(program: Program, target_path: str):
     program.blocks[block.name] = block
     return block.name
 
-# def test_or():
-#     net = parse_from_file('testdata/simple_or.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     # This program has 3 named variables (i.e. not temporaries)
-#     assert(len(ssa.list_variables()) == 3)
 
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.a': True, 'ToSafety.b': True},
-#                      {'a_or_b': True})
+def test_or():
+    program = Program('test_or')
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file('testdata/simple_or.xml')[0])
+    main_block.variables.temp = [
+        ('ToSafety.a', bool), ('ToSafety.b', bool), ('a_or_b', bool)]
+    program.blocks[main_block.name] = main_block
+    program.entry = main_block.name
+
+    model = modeling.program_model(program)
+    exec_and_compare(model, {'ToSafety.a': True,
+                     'ToSafety.b': True}, {'a_or_b': True})
 
 
 # def test_set():
