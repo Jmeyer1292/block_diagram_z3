@@ -139,8 +139,32 @@ class Scope:
             assertions.append(x == n)
 
         for name, vtype in self.variable_iface.inout:
-            raise NotImplementedError(
-                'in-out variables in a called block interface')
+            # raise NotImplementedError(
+            #     'in-out variables in a called block interface')
+            # TODO(Jmeyer): For reference types we can either:
+            #   1. Transform the function into something with no side effects
+            #
+            #      F(param := variable)
+            #      F(__old_param := prev(variable), param => variable)
+            #
+            #
+            #   2. Or we do the dereferencing here:
+            #       f(param := variable)
+            #       
+            #       scope.resolve(param) => variable
+            #       if is_addressable(variable):   HALT
+            #       else: scope.parent.resolve(variable)
+            
+            # Attempt at (1)
+            next_port = part.ivar(name)
+            prev_port = part.ivar(f'_old_{name}')
+            # this memory interface:
+            prev_instance = self.read(name, 0)
+            next_instance = self.read(name)
+            print(f'Inout: {name}')
+            assertions.append(prev_port == prev_instance)
+            assertions.append(next_port == next_instance)
+            print(f'\tBar {assertions[-1]} {assertions[-2]}')
 
         return assertions
 
@@ -181,6 +205,7 @@ class Call(PartTemplate):
             model.add_port(v[0], v[1], PortDirection.OUT)
         for v in block.variables.inout:
             model.add_port(v[0], v[1], PortDirection.OUT)
+            model.add_port(f'_old_{v[0]}', v[1], PortDirection.OUT)
 
         for p in self.negations:
             model.ports[p].set_negated()

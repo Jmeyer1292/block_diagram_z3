@@ -12,11 +12,12 @@ def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solve
 
     input_constraints = []
     for key, value in inputs.items():
-        v = program.root.read(key)
+        v = program.root.read(key, 0)
         input_constraints.append(v == value)
 
     solver.push()
     solver.add(z3.And(input_constraints))
+    print('INPUTS', z3.And(input_constraints))
     assert(solver.check() == z3.sat)
     return solver, solver.model()
 
@@ -36,7 +37,8 @@ def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outp
 
     for o in expected_outputs:
         if not (mem[o] == expected_outputs[o]):
-            msg = f'EXEC error: expected var {o} to be {expected_outputs[o]} but got {mem[o]}'
+            msg = f'EXEC error: expected var {o} to be {expected_outputs[o]} but got {mem[o]}\n'
+            msg += f'Context: {mem}\n{model}\nModel: {_}'
             raise AssertionError(msg)
 
 
@@ -183,6 +185,7 @@ def test_user_and():
     exec_and_compare(program_model, {'a': False, 'b': False}, {
                      'a_and_b': False})
 
+
 def _make_double_and_cases():
     cases = []
     for a in (True, False):
@@ -202,6 +205,7 @@ def _make_double_and_cases():
                     cases.append((ins, outs))
     return cases
 
+
 def test_double_and():
     program = Program('test_double_and')
     user_and_block = parse_function_from_file('testdata/UserAnd.xml')
@@ -210,10 +214,24 @@ def test_double_and():
     program.blocks[double_and_block.name] = double_and_block
     program.entry = double_and_block.name
     program_model = modeling.program_model(program)
-    # TODO(Jmeyer): as of initial writing, this does not work correctly
-    for a in program_model.assertions:
-        print(a, '\n')
+
     cases = _make_double_and_cases()
     for ins, outs in cases:
         exec_and_compare(program_model, ins, outs)
-    
+
+
+def test_user_set():
+    program = Program('test_user_set')
+
+    block = parse_function_from_file('testdata/UserSet.xml')
+    program.blocks[block.name] = block
+
+    main = parse_function_from_file('testdata/UserSetTest.xml')
+    program.blocks[main.name] = main
+
+    program.entry = main.name
+    program_model = modeling.program_model(program)
+    exec_and_compare(program_model, {'a': False, 'q': True}, {'a': True})
+    exec_and_compare(program_model, {'a': False, 'q': False}, {'a': False})
+    exec_and_compare(program_model, {'a': True, 'q': True}, {'a': True})
+    exec_and_compare(program_model, {'a': True, 'q': False}, {'a': True})
