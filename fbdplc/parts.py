@@ -27,8 +27,16 @@ class PartPort:
         self._negated = None
 
     def instantiate(self, ctx: z3.Context):
-        self._var = z3.Bool(self.name, ctx=ctx)
+        if self.port_type == bool:
+            self._var = z3.Bool(self.name, ctx=ctx)
+        elif self.port_type == int:
+            self._var = z3.BitVec(self.name, 16, ctx=ctx)
+        else:
+            raise NotImplementedError(
+                f'Cannot instantiate port {self.name} of type {self.port_type} as this type is not yet implemented')
+
         if self.is_negated:
+            assert self.port_type == bool, "Can only negate a boolean port"
             self._negated = z3.Bool(self.name + '__neg', ctx=ctx)
 
     def set_negated(self):
@@ -87,7 +95,7 @@ class PartTemplate:
         self.name = name
         self.negations = set()
 
-    def instantiate(self, namespace, context: z3.Context) -> PartModel:
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
         ''' Returns a unique program model '''
         raise NotImplementedError()
 
@@ -174,6 +182,25 @@ class CoilPart(PartTemplate):
             return z3.If(model.ivar('in'), model.ivar('operand') == False, model.ivar('operand') == model.ivar('_old_operand'))
 
         raise RuntimeError('Unknown coil type {}'.format(self.coil_type))
+
+
+class AddPart(PartTemplate):
+    def __init__(self, name, port_type):
+        super().__init__(name)
+        self.port_type = port_type
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        model.add_port('in1', self.port_type, PortDirection.IN)
+        model.add_port('in2', self.port_type, PortDirection.IN)
+        model.add_port('out', self.port_type, PortDirection.OUT)
+        model.instantiate_ports(context)
+
+        logic = model.ivar('out') == model.ivar('in1') + model.ivar('in2')
+        model.assertions.append(logic)
+
+        return model
 
 
 # class Part:

@@ -9,9 +9,14 @@ from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import OrPart, AndPart, PartTemplate, CoilPart
+from fbdplc.parts import AddPart, OrPart, AndPart, PartTemplate, CoilPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
+
+TYPE_MAP = {
+    'Int': int,
+    'Bool': bool
+}
 
 
 def _remove_namespaces(root):
@@ -85,10 +90,6 @@ def parse_function_block(root: etree._Element):
         'Static': Section.STATIC,
     }
 
-    TYPE_MAP = {
-        'Bool': bool,
-    }
-
     for section in iface_node[0]:
         # print('Section {}'.format(section))
         section_name = section.get('Name')
@@ -124,7 +125,6 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
     if len(wires) == 0:
         print('NO WIRES')
         return context
-
 
     wires = wires[0]
     parts = parts[0]
@@ -201,7 +201,7 @@ def parse_or(ns, node):
     return part
 
 
-def apply_negations(part : PartTemplate, negation_list):
+def apply_negations(part: PartTemplate, negation_list):
     for n in negation_list:
         part.negations.add(n)
 
@@ -221,6 +221,12 @@ def parse_coil(ns, node):
     return coil
 
 
+def parse_add(ns, node):
+    a = part_attributes(node)
+    add = AddPart(ns, TYPE_MAP[a['type']])
+    return add
+
+
 def parse_part(ns, node):
     part_type = node.get('Name')
     uid = node.get('UId')
@@ -231,6 +237,7 @@ def parse_part(ns, node):
         'Coil': parse_coil,
         'SCoil': parse_coil,
         'RCoil': parse_coil,
+        'Add': parse_add,
         # 'PBox': lambda ns, _: PTriggerPart(ns),
         # 'NBox': lambda ns, _: NTriggerPart(ns)
     }
@@ -276,8 +283,9 @@ def part_attributes(node):
     for c in node:
         if c.tag == 'TemplateValue' and c.get('Type') == 'Cardinality':
             attrib['dimension'] = int(c.text)
-
-        if c.tag == 'Negated':
+        if c.tag == 'TemplateValue' and c.get('Type') == 'Type':
+            attrib['type'] = c.text
+        elif c.tag == 'Negated':
             port = c.get('Name')
             if port is None:
                 raise RuntimeError('No "Name" attribute in negated xml tag')

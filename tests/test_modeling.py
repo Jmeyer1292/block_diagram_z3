@@ -216,3 +216,10 @@ def test_no_op():
     model = modeling.program_model(program)
     exec_and_compare(model, {'test_nop_var': True}, {'test_nop_var': True})
     exec_and_compare(model, {'test_nop_var': False}, {'test_nop_var': False})
+
+
+def test_user_add():
+    program = Program('test_user_add')
+    program.entry = _load_block(program, 'testdata/UserAdd.xml')
+    model = modeling.program_model(program)
+    exec_and_compare(model, {'a': 0, 'b': 5}, {'result': 1})

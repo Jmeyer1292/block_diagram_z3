@@ -27,7 +27,7 @@ class GlobalMemory:
             return
         self._make(ir, sort)
 
-    def read(self, name: str, idx = None):
+    def read(self, name: str, idx=None):
         assert name in self.ssa.list_variables()
         return self.variables[self.ssa.read(name, idx=idx)]
 
@@ -199,7 +199,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             _next = get_writeable(the_access)
 
             other = get_var(the_port)
-
+            print(_next, _next.sort())
+            print(other, other.sort())
             program_model.assertions.append(_next == other)
 
             old = f'_old_{the_port_name}'

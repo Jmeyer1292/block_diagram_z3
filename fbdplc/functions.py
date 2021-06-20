@@ -106,18 +106,24 @@ class Scope:
         self.ctx = ctx
         # Instantiate variables for this scope
         self._variables = {}
+        self._sorts = {}
         self.ssa = VariableResolver()
 
         self._make_variables(ctx)
 
     def _make_variables(self, ctx: z3.Context):
         for name, vtype in self.variable_iface.all_variables():
-            assert(vtype == bool)
-            # v = z3.Bool(namespace(self.ns, name), ctx=ctx)
-            # self._variables[name] = v
             uname = self.ssa.read(name)
             handle = namespace(self.ns, uname)
-            self._variables[uname] = z3.Bool(handle, ctx=ctx)
+
+            if vtype == bool: 
+                self._variables[uname] = z3.Bool(handle, ctx=ctx)
+                self._sorts[name] = bool
+            elif vtype == int:
+                self._variables[uname] = z3.BitVec(handle, 16, ctx=ctx)
+                self._sorts[name] = int
+            else:
+                raise NotImplementedError(f'Variable type {vtype} not yet supported by Scope')
 
     def var(self, name):
         return self._variables[name]
@@ -178,7 +184,13 @@ class Scope:
         assert name in self.ssa.list_variables()
         uname = self.ssa.write(name)
         handle = namespace(self.ns, uname)
-        v = z3.Bool(handle, ctx=self.ctx)
+        sort = self._sorts[name]
+        if sort == bool:
+            v = z3.Bool(handle, ctx=self.ctx)
+        elif sort == int:
+            v = z3.BitVec(handle, 16, ctx=self.ctx)
+        else:
+            raise NotImplementedError('Bad type')
         self._variables[uname] = v
         return v
 

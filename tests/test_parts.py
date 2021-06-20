@@ -1,4 +1,4 @@
-from fbdplc.parts import AndPart, CoilPart, OrPart, PartModel, PartPort, PortDirection
+from fbdplc.parts import AddPart, AndPart, CoilPart, OrPart, PartModel, PartPort, PortDirection
 import z3
 
 
@@ -95,3 +95,12 @@ def test_rcoil():
                {'out': False, 'operand': False})
     _test_case(part, {'in': False, prev('operand'): True},
                {'out': False, 'operand': True})
+
+
+def test_add():
+    part = AddPart('add', port_type=int)
+    _test_case(part, {'in1': 0, 'in2': 0}, {'out': 0})
+    _test_case(part, {'in1': 1, 'in2': 0}, {'out': 1})
+    _test_case(part, {'in1': 0, 'in2': 1}, {'out': 1})
+    _test_case(part, {'in1': -1, 'in2': 1}, {'out': 0})
+    _test_case(part, {'in1': -1, 'in2': -1}, {'out': -2})
