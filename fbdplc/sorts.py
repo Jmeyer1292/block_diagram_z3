@@ -15,5 +15,6 @@ class Boolean:
 
 SORT_MAP = {
     'Bool': Boolean,
-    'Int': Integer
+    'Int': Integer,
+    'Time': Integer # ???
 }

@@ -32,6 +32,8 @@ class BlockVariables:
         self.temp = []
         self.constant = []
         self.ret = []
+        # Only valid for FB block types
+        self.statics = []
 
     def __str__(self):
         input = ','.join([f'({s[0]}, {s[1]})' for s in self.input])
@@ -58,6 +60,8 @@ class BlockVariables:
         elif section == Section.RETURN:
             data_section = self.ret
             assert(len(self.ret) == 0)
+        elif section == Section.STATIC:
+            data_section = self.statics
         else:
             raise RuntimeError(f'Unrecognized section enum {section}')
         data_section.append((name, datatype))
@@ -81,7 +85,7 @@ class Block:
         pass
         # A function block has a name
         # It has an interface which tracks what variables we have.
-        #  Section = Input | Output | InOut | Temp | Constant | Return
+        #  Section = Input | Output | InOut | Temp | Constant | Return | Static
         #
         # where each section is composed of 0+ "Members"
         #  Member = (Name, Datatype)
