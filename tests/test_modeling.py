@@ -15,8 +15,9 @@ def test_or():
     program = Program('test_or')
     main_block = Block('main')
     main_block.networks.append(parse_from_file('testdata/simple_or.xml')[0])
-    main_block.variables.temp = [
-        ('ToSafety.a', bool), ('ToSafety.b', bool), ('a_or_b', bool)]
+    # ToSafety.a and ToSafety.b are global variables and are, at least currently,
+    # dynamically allocated. I don't verify the structure of these.
+    main_block.variables.temp = [('a_or_b', bool)]
     program.blocks[main_block.name] = main_block
     program.entry = main_block.name
 

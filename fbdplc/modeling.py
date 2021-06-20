@@ -4,8 +4,38 @@ from typing import List, Union
 import z3
 from fbdplc.parts import CoilPart, PartModel, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, WireConnection
-from fbdplc.graph import ScopeContext, merge_nets
+from fbdplc.graph import ScopeContext, VariableResolver, merge_nets
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
+
+
+class GlobalMemory:
+    def __init__(self, ctx: z3.Context):
+        self.ctx = ctx
+        self.ssa = VariableResolver()
+        self.variables = {}
+
+    def _make(self, ir, sort: type):
+        assert sort == bool
+        self.variables[ir] = z3.Bool(ir, ctx=self.ctx)
+
+    def alloc(self, name: str, sort: type):
+        # assert name not in self.ssa.list_variables()
+        print(f'Allocating {name} to global mem')
+        ir = self.ssa.read(name)
+        if ir in self.ssa.list_variables():
+            print('...Already exists')
+            return
+        self._make(ir, sort)
+
+    def read(self, name: str, idx = None):
+        assert name in self.ssa.list_variables()
+        return self.variables[self.ssa.read(name, idx=idx)]
+
+    def write(self, name: str):
+        assert name in self.ssa.list_variables()
+        ir = self.ssa.write(name)
+        self._make(ir, bool)
+        return self.variables[ir]
 
 
 class ProgramModel:
@@ -15,6 +45,7 @@ class ProgramModel:
         # We need some kind of static call graph for users to write assertions against
         # or we need to accumulate annotations from the code itself.
         self.root: Scope = None
+        self.global_mem = GlobalMemory(self.ctx)
 
 
 class MemoryAccessProxy:
@@ -37,6 +68,10 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     # Each entity within a scope has a 'uid' associated with it. This uid is unique only to
     # the scope it is contained within.
     code = merge_nets(block.networks)
+
+    for uid, access in code.accesses.items():
+        if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
+            program_model.global_mem.alloc(access.symbol, bool)
 
     # Build a dictionary of instantiated parts
     callables = {}
@@ -100,6 +135,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
                         # print(f'{local._variables}')
                         # print(f'{access.symbol}')
                         return MemoryAccessProxy(access.symbol, local)
+                    elif access.scope == 'GlobalVariable':
+                        return MemoryAccessProxy(access.symbol, program_model.global_mem)
                     else:
                         raise RuntimeError(
                             f'Unhandled access scope: {access.scope}')
