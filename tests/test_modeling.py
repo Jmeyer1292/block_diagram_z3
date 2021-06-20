@@ -1,9 +1,14 @@
 from typing import Tuple
 from fbdplc.functions import Block, Program, Scope
-from fbdplc.graph import merge_nets, merge_scopes
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
 import fbdplc.modeling as modeling
 import z3
+
+
+def _load_block(program: Program, target_path: str):
+    block = parse_function_from_file(target_path)
+    program.blocks[block.name] = block
+    return block.name
 
 
 def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solver, z3.ModelRef]:
@@ -234,3 +239,12 @@ def test_user_set():
     exec_and_compare(program_model, {'a': False, 'q': False}, {'a': False})
     exec_and_compare(program_model, {'a': True, 'q': True}, {'a': True})
     exec_and_compare(program_model, {'a': True, 'q': False}, {'a': True})
+
+
+def test_no_op():
+    program = Program('test_no_op')
+    _load_block(program, 'testdata/NoOp.xml')
+    program.entry = _load_block(program, 'testdata/TestSuite.xml')
+    model = modeling.program_model(program)
+    exec_and_compare(model, {'test_nop_var': True}, {'test_nop_var': True})
+    exec_and_compare(model, {'test_nop_var': False}, {'test_nop_var': False})
