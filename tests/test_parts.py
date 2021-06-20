@@ -1,5 +1,5 @@
 from fbdplc.sorts import Boolean, Integer
-from fbdplc.parts import AddPart, AndPart, CoilPart, OrPart, PartModel, PartPort, PortDirection
+from fbdplc.parts import AddPart, AndPart, CoilPart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection
 import z3
 
 
@@ -105,3 +105,27 @@ def test_add():
     _test_case(part, {'in1': 0, 'in2': 1}, {'out': 1})
     _test_case(part, {'in1': -1, 'in2': 1}, {'out': 0})
     _test_case(part, {'in1': -1, 'in2': -1}, {'out': -2})
+
+
+def test_ptrig():
+    part = PTriggerPart('ptrig')
+    _test_case(part, {'in': True, prev('bit'): False},
+               {'out': True, 'bit': True})
+    _test_case(part, {'in': True, prev('bit'): True},
+               {'out': False, 'bit': True})
+    _test_case(part, {'in': False, prev('bit'): False},
+               {'out': False, 'bit': False})
+    _test_case(part, {'in': False, prev('bit'): True},
+               {'out': False, 'bit': False})
+
+
+def test_ntrig():
+    part = NTriggerPart('ntrig')
+    _test_case(part, {'in': True, prev('bit'): False},
+               {'out': False, 'bit': True})
+    _test_case(part, {'in': True, prev('bit'): True},
+               {'out': False, 'bit': True})
+    _test_case(part, {'in': False, prev('bit'): False},
+               {'out': False, 'bit': False})
+    _test_case(part, {'in': False, prev('bit'): True},
+               {'out': True, 'bit': False})
