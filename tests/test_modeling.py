@@ -182,3 +182,38 @@ def test_user_and():
                      'a_and_b': False})
     exec_and_compare(program_model, {'a': False, 'b': False}, {
                      'a_and_b': False})
+
+def _make_double_and_cases():
+    cases = []
+    for a in (True, False):
+        for b in (True, False):
+            for c in (True, False):
+                for d in (True, False):
+                    i = a and b
+                    j = c and d
+                    ins = {}
+                    outs = {}
+                    ins['a'] = a
+                    ins['b'] = b
+                    ins['c'] = c
+                    ins['d'] = d
+                    outs['i'] = i
+                    outs['j'] = j
+                    cases.append((ins, outs))
+    return cases
+
+def test_double_and():
+    program = Program('test_double_and')
+    user_and_block = parse_function_from_file('testdata/UserAnd.xml')
+    double_and_block = parse_function_from_file('testdata/DoubleAnd.xml')
+    program.blocks[user_and_block.name] = user_and_block
+    program.blocks[double_and_block.name] = double_and_block
+    program.entry = double_and_block.name
+    program_model = modeling.program_model(program)
+    # TODO(Jmeyer): as of initial writing, this does not work correctly
+    for a in program_model.assertions:
+        print(a, '\n')
+    cases = _make_double_and_cases()
+    for ins, outs in cases:
+        exec_and_compare(program_model, ins, outs)
+    

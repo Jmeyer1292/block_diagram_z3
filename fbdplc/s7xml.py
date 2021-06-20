@@ -82,6 +82,7 @@ def parse_function_block(root: etree._Element):
         'Temp': Section.TEMP,
         'Constant': Section.CONSTANT,
         'Return': Section.RETURN,
+        'Static': Section.STATIC,
     }
 
     TYPE_MAP = {

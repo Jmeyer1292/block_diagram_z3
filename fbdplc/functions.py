@@ -20,6 +20,7 @@ class Section(enum.Enum):
     TEMP = 3
     CONSTANT = 4
     RETURN = 5
+    STATIC = 6
 
 
 class BlockVariables:
