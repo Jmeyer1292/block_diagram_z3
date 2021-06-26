@@ -34,9 +34,9 @@ class SymbolConstantAccess(Access):
 
 
 class LiteralConstantAccess(Access):
-    def __init__(self, value):
+    def __init__(self, value, sort):
         self.value = value
-        self.ltype = type(value)
+        self.ltype = sort
 
     def __str__(self):
         return f'LiteralAccess({self.ltype}({self.value}))'

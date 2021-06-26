@@ -3,14 +3,14 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
-from fbdplc.sorts import Boolean, SORT_MAP
+from fbdplc.sorts import Boolean, Integer, SORT_MAP
 from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
 from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import AddPart, OrPart, AndPart, PartTemplate, CoilPart
+from fbdplc.parts import AddPart, GreaterThanOrEqualPart, LessThanOrEqualPart, OrPart, AndPart, PartTemplate, CoilPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
@@ -43,15 +43,22 @@ def parse_access(node, ns: str):
         assert(type_node.tag == 'ConstantType')
         value_node = child[1]
         assert(value_node.tag == 'ConstantValue')
-        # TODO(Jmeyer): Handle not just bools
-        assert(type_node.text == 'Bool')
-        b = None
-        if value_node.text == 'True':
-            return LiteralConstantAccess(True)
-        elif value_node.text == 'False':
-            return LiteralConstantAccess(False)
+
+        if type_node.text == 'Bool':
+            v = value_node.text.lower()
+            if v == 'true':
+                return LiteralConstantAccess(True, Boolean)
+            elif v == 'false':
+                return LiteralConstantAccess(False, Boolean)
+            else:
+                raise ValueError(
+                    f'Unsupported literal value {value_node.text}')
+        elif type_node.text == 'Int':
+            value = int(value_node.text)
+            return LiteralConstantAccess(value, Integer)
         else:
-            raise ValueError(f'Unsupported literal value {value_node.text}')
+            raise ValueError(
+                f'Unsupported literal type {type_node.text} with value {value_node.value}')
     else:
         raise ValueError(f'Unimplemented scope for Access, "{scope}"')
 
@@ -275,6 +282,18 @@ def parse_add(ns, node):
     return add
 
 
+def parse_ge(ns, node):
+    a = part_attributes(node)
+    ge = GreaterThanOrEqualPart(ns, SORT_MAP[a['type']])
+    return ge
+
+
+def parse_le(ns, node):
+    a = part_attributes(node)
+    le = LessThanOrEqualPart(ns, SORT_MAP[a['type']])
+    return le
+
+
 def parse_part(ns, node):
     part_type = node.get('Name')
     uid = node.get('UId')
@@ -286,6 +305,8 @@ def parse_part(ns, node):
         'SCoil': parse_coil,
         'RCoil': parse_coil,
         'Add': parse_add,
+        'Ge': parse_ge,
+        'Le': parse_le,
         # 'PBox': lambda ns, _: PTriggerPart(ns),
         # 'NBox': lambda ns, _: NTriggerPart(ns)
     }

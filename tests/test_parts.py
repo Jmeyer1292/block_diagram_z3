@@ -1,5 +1,5 @@
 from fbdplc.sorts import Boolean, Integer
-from fbdplc.parts import AddPart, AndPart, CoilPart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection
+from fbdplc.parts import AddPart, AndPart, CoilPart, GreaterThanOrEqualPart, LessThanOrEqualPart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection, WordToBitsPart
 import z3
 
 
@@ -129,3 +129,38 @@ def test_ntrig():
                {'out': False, 'bit': False})
     _test_case(part, {'in': False, prev('bit'): True},
                {'out': True, 'bit': False})
+
+
+def test_ge():
+    part = GreaterThanOrEqualPart('ge', port_type=Integer)
+    _test_case(part, {'in1': 0, 'in2': 0}, {'out': True})
+    _test_case(part, {'in1': 1, 'in2': 0}, {'out': True})
+    _test_case(part, {'in1': 0, 'in2': 1}, {'out': False})
+    _test_case(part, {'in1': 2, 'in2': 1}, {'out': True})
+    _test_case(part, {'in1': -1, 'in2': -1}, {'out': True})
+    _test_case(part, {'in1': -1, 'in2': 0}, {'out': False})
+
+
+def test_le():
+    part = LessThanOrEqualPart('le', port_type=Integer)
+    _test_case(part, {'in1': 0, 'in2': 0}, {'out': True})
+    _test_case(part, {'in1': 1, 'in2': 0}, {'out': False})
+    _test_case(part, {'in1': 0, 'in2': 1}, {'out': True})
+    _test_case(part, {'in1': 2, 'in2': 1}, {'out': False})
+    _test_case(part, {'in1': -1, 'in2': -1}, {'out': True})
+    _test_case(part, {'in1': -1, 'in2': 0}, {'out': True})
+
+
+def test_w_bo():
+    def _helper(word: int):
+        bits = {}
+        for i in range(16):
+            mask = 1 << i
+            b = bool(word & mask)
+            bits[f'OUT{i + 1}'] = b
+        return bits
+
+    part = WordToBitsPart('part', port_type=Integer)
+    _test_case(part, {'IN': 0}, _helper(0))
+    _test_case(part, {'IN': 1}, _helper(1))
+    _test_case(part, {'IN': 5}, _helper(5))
