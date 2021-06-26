@@ -62,8 +62,53 @@ def parse_block(tree: etree._ElementTree) -> Block:
     BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
     block_node = [b for b in root if b.tag in BLOCK_TAGS]
     assert(len(block_node) == 1)
-    # print(block_node)
     return parse_function_block(block_node[0])
+
+
+class UserDefinedType:
+    def __init__(self, name):
+        self.name = name
+        self.fields = []
+
+    def flatten(self):
+        return self.fields
+
+
+def _parse_udt(node: etree._Element, path, udt: UserDefinedType):
+    # Recursive. Base condition is no child nodes
+    is_member = node.tag == 'Member'
+    has_children = len(node) > 0
+
+    new_path = (path + [node.get('Name'), ]) if is_member else path
+
+    if has_children:
+        for c in node:
+            _parse_udt(c, new_path, udt)
+    elif is_member:
+        n = '.'.join(new_path)
+        sort = node.get('Datatype')
+        udt.fields.append((n, sort))
+
+
+def parse_udt(member_node: etree._Element):
+    '''
+    Recurse over a data structure as declared in the Members section of a
+    data blocks' variable interface.
+    '''
+    root_name = member_node.get('Name')
+    root_datatype = member_node.get('Datatype')
+
+    assert root_datatype.startswith('"')  # udt
+    assert len(member_node) == 1
+
+    # TODO(Jmeyer): I need examples of deep structs to reverse engineer the format
+    udt = UserDefinedType(root_datatype)
+    _parse_udt(member_node[0], [root_name, ], udt)
+
+    print(udt.name)
+    print(udt.fields)
+
+    return udt
 
 
 def parse_function_block(root: etree._Element):
@@ -87,16 +132,23 @@ def parse_function_block(root: etree._Element):
     }
 
     for section in iface_node[0]:
-        # print('Section {}'.format(section))
         section_name = section.get('Name')
         section_enum = TAG_MAP[section_name]
 
         for member in section:
             n = member.get('Name')
-            datatype = member.get('Datatype')
+            datatype: str = member.get('Datatype')
             if datatype == 'Void':
                 continue
-            block.variables.add(section_enum, n, SORT_MAP[datatype])
+
+            if datatype.startswith('"'):
+                print(f'{n} has a custom data structure of type {datatype}')
+                udt = parse_udt(member)
+                for leaf_name, leaf_sort in udt.flatten():
+                    block.variables.add(
+                        section_enum, leaf_name, SORT_MAP[leaf_sort])
+            else:
+                block.variables.add(section_enum, n, SORT_MAP[datatype])
 
     block.networks = discover_networks(root)
     # print(f'...Finished parsing block {block_name}')
