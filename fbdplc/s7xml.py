@@ -10,7 +10,7 @@ from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import AddPart, GreaterThanOrEqualPart, LessThanOrEqualPart, OrPart, AndPart, PartTemplate, CoilPart, WordToBitsPart
+from fbdplc.parts import AddPart, BitsToWordPart, GreaterThanOrEqualPart, LessThanOrEqualPart, OrPart, AndPart, PartTemplate, CoilPart, WordToBitsPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
@@ -296,6 +296,10 @@ def parse_le(ns, node):
 def parse_w_bo(ns, node):
     return WordToBitsPart(ns, Integer)
 
+def parse_bo_w(ns, node):
+    return BitsToWordPart(ns, Integer)
+
+
 def parse_part(ns, node):
     part_type = node.get('Name')
     uid = node.get('UId')
@@ -310,6 +314,7 @@ def parse_part(ns, node):
         'Ge': parse_ge,
         'Le': parse_le,
         'W_BO': parse_w_bo,
+        'BO_W': parse_bo_w,
         # 'PBox': lambda ns, _: PTriggerPart(ns),
         # 'NBox': lambda ns, _: NTriggerPart(ns)
     }

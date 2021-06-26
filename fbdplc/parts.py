@@ -299,17 +299,40 @@ class WordToBitsPart(PartTemplate):
         model = PartModel(instance_name)
 
         model.add_port('IN', self.port_type, PortDirection.IN)
-        for i in range(1, 16 + 1):
+        for i in range(16):
             n = f'OUT{i}'
             model.add_port(n, Boolean, PortDirection.OUT)
         model.instantiate_ports(context)
 
         logic = []
-        for i in range(1, 16 + 1):
+        for i in range(16):
             n = f'OUT{i}'
-            bit_sel = i - 1
-            # print((z3.Extract(bit_sel, bit_sel, model.ivar('IN'))).sort())
-            l = model.ivar(n) == (z3.Extract(bit_sel, bit_sel, model.ivar('IN')) == 1)
+            l = model.ivar(n) == (z3.Extract(i, i, model.ivar('IN')) == 1)
+            logic.append(l)
+        
+        model.assertions.append(z3.And(logic))
+        return model
+
+class BitsToWordPart(PartTemplate):
+    # TODO(Jmeyer): Support alternate word sizes?
+    def __init__(self, name, port_type):
+        super().__init__(name)
+        self.port_type = port_type
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+
+        model.add_port('OUT', self.port_type, PortDirection.OUT)
+        for i in range(16):
+            n = f'IN{i}'
+            model.add_port(n, Boolean, PortDirection.IN)
+        model.instantiate_ports(context)
+
+        logic = []
+        for i in range(16):
+            n = f'IN{i}'
+            l = model.ivar(n) == (z3.Extract(i, i, model.ivar('OUT')) == 1)
             logic.append(l)
         
         model.assertions.append(z3.And(logic))

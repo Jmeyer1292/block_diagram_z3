@@ -31,4 +31,4 @@ if __name__ == '__main__':
     if args.verbose:
         print('Program Model\n----------')
         for a in model.assertions:
-            print(f'{a}')
+            print(f'{a},')

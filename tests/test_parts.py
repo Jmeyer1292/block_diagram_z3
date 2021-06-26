@@ -1,5 +1,5 @@
 from fbdplc.sorts import Boolean, Integer
-from fbdplc.parts import AddPart, AndPart, CoilPart, GreaterThanOrEqualPart, LessThanOrEqualPart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection, WordToBitsPart
+from fbdplc.parts import AddPart, AndPart, BitsToWordPart, CoilPart, GreaterThanOrEqualPart, LessThanOrEqualPart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection, WordToBitsPart
 import z3
 
 
@@ -157,10 +157,27 @@ def test_w_bo():
         for i in range(16):
             mask = 1 << i
             b = bool(word & mask)
-            bits[f'OUT{i + 1}'] = b
+            bits[f'OUT{i}'] = b
         return bits
 
     part = WordToBitsPart('part', port_type=Integer)
     _test_case(part, {'IN': 0}, _helper(0))
     _test_case(part, {'IN': 1}, _helper(1))
     _test_case(part, {'IN': 5}, _helper(5))
+
+
+def test_bo_w():
+    def _helper(word: int):
+        bits = {}
+        for i in range(16):
+            mask = 1 << i
+            b = bool(word & mask)
+            bits[f'IN{i}'] = b
+        return bits
+
+    part = BitsToWordPart('part', port_type=Integer)
+    _test_case(part, _helper(0), {'OUT': 0})
+    _test_case(part, _helper(2), {'OUT': 2})
+    _test_case(part, _helper(3), {'OUT': 3})
+    _test_case(part, _helper(4), {'OUT': 4})
+    _test_case(part, _helper(5), {'OUT': 5})
