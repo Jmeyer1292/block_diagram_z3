@@ -48,3 +48,8 @@ def test_udt_parse():
     assert udt.fields[1][0] == 'status_a.b'
     assert udt.fields[2][0] == 'status_a.c'
     assert udt.fields[3][0] == 'status_a.d'
+
+def test_time_parse():
+  assert s7mxl.parse_time_string('T#2S') == 2000
+  assert s7mxl.parse_time_string('T#2000MS') == 2000
+  

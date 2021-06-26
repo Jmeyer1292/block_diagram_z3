@@ -3,17 +3,31 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
-from fbdplc.sorts import Boolean, Integer, SORT_MAP
+from fbdplc.sorts import Boolean, Integer, SORT_MAP, Time
 from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
-from typing import List
+from typing import List, Tuple
 from lxml import etree
+import re
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import AddPart, BitsToWordPart, GreaterThanOrEqualPart, LessThanOrEqualPart, OrPart, AndPart, PartTemplate, CoilPart, WordToBitsPart
+from fbdplc.parts import AddPart, BitsToWordPart, GreaterThanOrEqualPart, LessThanOrEqualPart, NTriggerPart, OrPart, AndPart, PTriggerPart, PartTemplate, CoilPart, WordToBitsPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
+MATCH_TIME = re.compile(r'T#(\d+)(\w+)')
+
+def parse_time_string(text: str) -> int:
+    ''' Parses a time string, ala "T#2S", and returns the equivalent number of milliseconds '''
+    m = MATCH_TIME.match(text)
+    count = int(m.group(1))
+    interval = m.group(2)
+    INTERVALS = {
+        'S': 1000,
+        'MS': 1
+    }
+
+    return count * INTERVALS[interval]
 
 def _remove_namespaces(root):
     for elem in root.getiterator():
@@ -59,6 +73,16 @@ def parse_access(node, ns: str):
         else:
             raise ValueError(
                 f'Unsupported literal type {type_node.text} with value {value_node.value}')
+    elif scope == 'TypedConstant':
+        child = node[0]
+        assert child.tag == 'Constant'
+        value_node = child[0]
+        assert value_node.tag == 'ConstantValue'
+        # Only supporting Time values here so far
+        assert value_node.text.startswith('T#')
+        ms = parse_time_string(value_node.text)
+        return LiteralConstantAccess(ms, Time)
+        
     else:
         raise ValueError(f'Unimplemented scope for Access, "{scope}"')
 
@@ -315,8 +339,8 @@ def parse_part(ns, node):
         'Le': parse_le,
         'W_BO': parse_w_bo,
         'BO_W': parse_bo_w,
-        # 'PBox': lambda ns, _: PTriggerPart(ns),
-        # 'NBox': lambda ns, _: NTriggerPart(ns)
+        'PBox': lambda ns, _: PTriggerPart(ns),
+        'NBox': lambda ns, _: NTriggerPart(ns)
     }
 
     prefix = ':'.join([ns, part_type + uid])

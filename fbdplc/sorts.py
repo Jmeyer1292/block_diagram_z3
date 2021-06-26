@@ -12,9 +12,13 @@ class Boolean:
     def make(name: str, ctx: z3.Context):
         return z3.Bool(name, ctx=ctx)
 
+class Time:
+    @staticmethod
+    def make(name: str, ctx: z3.Context):
+        return z3.Int(name, ctx=ctx)
 
 SORT_MAP = {
     'Bool': Boolean,
     'Int': Integer,
-    'Time': Integer # ???
+    'Time': Time # ???
 }
