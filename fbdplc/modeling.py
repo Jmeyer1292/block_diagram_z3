@@ -1,3 +1,4 @@
+from fbdplc.sorts import Boolean, Integer
 from z3.z3types import Z3Exception
 from fbdplc.utils import namespace
 from fbdplc.functions import Block, Call, Program, Scope
@@ -14,14 +15,20 @@ class GlobalMemory:
         self.ctx = ctx
         self.ssa = VariableResolver()
         self.variables = {}
+        self.sorts = {}
 
     def _make(self, ir, sort: type):
-        assert sort == bool
-        self.variables[ir] = z3.Bool(ir, ctx=self.ctx)
+        self.sorts[ir] = sort
+        if sort == Boolean:
+            self.variables[ir] = z3.Bool(ir, ctx=self.ctx)
+        elif sort == Integer:
+            self.variables[ir] = sort.make(ir, self.ctx)
+        else:
+            raise NotImplementedError(f'Cannot create variable {ir} of sort {sort}')
 
     def alloc(self, name: str, sort: type):
         # assert name not in self.ssa.list_variables()
-        print(f'Allocating {name} to global mem')
+        print(f'Allocating {name} of sort {sort} to global mem')
         ir = self.ssa.read(name)
         if ir in self.ssa.list_variables():
             print('...Already exists')
@@ -35,7 +42,8 @@ class GlobalMemory:
     def write(self, name: str):
         assert name in self.ssa.list_variables()
         ir = self.ssa.write(name)
-        self._make(ir, bool)
+        sort = self.sorts[self.ssa.read(name, 0)]
+        self._make(ir, sort)
         return self.variables[ir]
 
 
@@ -72,7 +80,9 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
 
     for uid, access in code.accesses.items():
         if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
-            program_model.global_mem.alloc(access.symbol, bool)
+            # TODO(Jmeyer): Only supports bools?
+            isbool = not access.symbol.endswith('case')
+            program_model.global_mem.alloc(access.symbol, Integer if not isbool else Boolean)
 
     # Build a dictionary of instantiated parts
     callables = {}
@@ -147,7 +157,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             else:
                 assert(isinstance(conn, NamedConnection))
                 part_iface: PartModel = callables[conn.target_uid]
-                # print(f'Connection {conn} is a part connection: {part_iface}::{conn.target_port}')
+                print(f'Connection {conn} is a part connection: {part_iface.name}::{conn.target_port}')
+                print(part_iface.ports)
                 port = part_iface.ports[conn.target_port]
                 return port
 
@@ -164,7 +175,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         def get_var(resolvable):
             if isinstance(resolvable, MemoryAccessProxy):
                 scope = resolvable.scope
-                print(f'Get var {resolvable.name} from {scope}')
+                # print(f'Get var {resolvable.name} from {scope}')
                 return scope.read(resolvable.name)
             elif isinstance(resolvable, PartPort):
                 return resolvable.external_var()
@@ -207,15 +218,15 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             _next = get_writeable(the_access)
 
             other = get_var(the_port)
-            print(_next, _next.sort())
-            print(other, other.sort())
+            # print(_next, _next.sort())
+            # print(other, other.sort())
             program_model.assertions.append(_next == other)
 
             old = f'_old_{the_port_name}'
             if old in the_part.ports:
                 old_port = the_part.evar(old)
                 a = _prev == old_port
-                print(f'Adding {a}')
+                # print(f'Adding {a}')
                 program_model.assertions.append(a)
             else:
                 print(
