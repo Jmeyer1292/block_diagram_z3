@@ -10,7 +10,7 @@ from typing import List
 from lxml import etree
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import AddPart, GreaterThanOrEqualPart, LessThanOrEqualPart, OrPart, AndPart, PartTemplate, CoilPart
+from fbdplc.parts import AddPart, GreaterThanOrEqualPart, LessThanOrEqualPart, OrPart, AndPart, PartTemplate, CoilPart, WordToBitsPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
@@ -48,7 +48,7 @@ def parse_access(node, ns: str):
             v = value_node.text.lower()
             if v == 'true':
                 return LiteralConstantAccess(True, Boolean)
-            elif v == 'false':
+            elif v == 'false' or v == '0':
                 return LiteralConstantAccess(False, Boolean)
             else:
                 raise ValueError(
@@ -293,6 +293,8 @@ def parse_le(ns, node):
     le = LessThanOrEqualPart(ns, SORT_MAP[a['type']])
     return le
 
+def parse_w_bo(ns, node):
+    return WordToBitsPart(ns, Integer)
 
 def parse_part(ns, node):
     part_type = node.get('Name')
@@ -307,6 +309,7 @@ def parse_part(ns, node):
         'Add': parse_add,
         'Ge': parse_ge,
         'Le': parse_le,
+        'W_BO': parse_w_bo,
         # 'PBox': lambda ns, _: PTriggerPart(ns),
         # 'NBox': lambda ns, _: NTriggerPart(ns)
     }
