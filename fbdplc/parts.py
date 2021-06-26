@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer
+from fbdplc.sorts import Boolean, Integer, Time
 import z3
 from typing import Dict
 from fbdplc.utils import namespace
@@ -32,6 +32,8 @@ class PartPort:
             self._var = Boolean.make(self.name, ctx=ctx)
         elif self.port_type == Integer:
             self._var = Integer.make(self.name, ctx=ctx)
+        elif self.port_type == Time:
+            self._var = Time.make(self.name, ctx=ctx)
         else:
             raise NotImplementedError(
                 f'Cannot instantiate port {self.name} of type {self.port_type} as this type is not yet implemented')
@@ -223,6 +225,25 @@ class GreaterThanOrEqualPart(PartTemplate):
         return model
 
 
+class GreaterThanPart(PartTemplate):
+    def __init__(self, name, port_type):
+        super().__init__(name)
+        self.port_type = port_type
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        model.add_port('in1', self.port_type, PortDirection.IN)
+        model.add_port('in2', self.port_type, PortDirection.IN)
+        model.add_port('out', Boolean, PortDirection.OUT)
+        model.instantiate_ports(context)
+
+        logic = model.ivar('out') == (model.ivar('in1') > model.ivar('in2'))
+        model.assertions.append(logic)
+
+        return model
+
+
 class LessThanOrEqualPart(PartTemplate):
     def __init__(self, name, port_type):
         super().__init__(name)
@@ -309,9 +330,10 @@ class WordToBitsPart(PartTemplate):
             n = f'OUT{i}'
             l = model.ivar(n) == (z3.Extract(i, i, model.ivar('IN')) == 1)
             logic.append(l)
-        
+
         model.assertions.append(z3.And(logic))
         return model
+
 
 class BitsToWordPart(PartTemplate):
     # TODO(Jmeyer): Support alternate word sizes?
@@ -334,6 +356,90 @@ class BitsToWordPart(PartTemplate):
             n = f'IN{i}'
             l = model.ivar(n) == (z3.Extract(i, i, model.ivar('OUT')) == 1)
             logic.append(l)
-        
+
         model.assertions.append(z3.And(logic))
+        return model
+
+
+class TOnPart(PartTemplate):
+    def __init__(self, name):
+        # TODO(Jmeyer): Support custom or different time types?
+        super().__init__(name)
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+
+        model.add_port('IN', Boolean, PortDirection.IN)
+        model.add_port('Q', Boolean, PortDirection.OUT)
+        model.add_port('PT', Time, PortDirection.IN)
+        model.add_port('ET', Time, PortDirection.OUT)
+        # How do we interact with this part for the purposes of analysis?
+        model.add_port('__elapsed', Boolean, PortDirection.IN)
+
+        model.instantiate_ports(context)
+
+        logic = z3.And(model.ivar('IN'), model.ivar(
+            '__elapsed')) == model.ivar('Q')
+        model.assertions.append(logic)
+        return model
+
+
+class TOfPart(PartTemplate):
+    def __init__(self, name):
+        # TODO(Jmeyer): Support custom or different time types?
+        super().__init__(name)
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+
+        model.add_port('IN', Boolean, PortDirection.IN)
+        model.add_port('Q', Boolean, PortDirection.OUT)
+        model.add_port('PT', Time, PortDirection.IN)
+        model.add_port('ET', Time, PortDirection.OUT)
+        # How do we interact with this part for the purposes of analysis?
+        model.add_port('__elapsed', Boolean, PortDirection.IN)
+
+        model.instantiate_ports(context)
+
+        logic = z3.Or(model.ivar('IN'), model.ivar(
+            '__elapsed')) == model.ivar('Q')
+        model.assertions.append(logic)
+        return model
+
+
+class AckGlobalPart(PartTemplate):
+    # TODO How do we represent the global ack state?
+    def __init__(self, name):
+        super().__init__(name)
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+
+        model.add_port('ACK_GLOB', Boolean, PortDirection.IN)
+        model.add_port('en', Boolean, PortDirection.IN)
+
+        model.instantiate_ports(context)
+        # TODO(Jmeyer): Logic?
+        return model
+
+
+class MovePart(PartTemplate):
+    # TODO The XML doesn't directly tell you what the types are here. We need to go
+    # and figure them out.
+    def __init__(self, name):
+        # TODO(Jmeyer): Support custom or different time types?
+        super().__init__(name)
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+
+        model.add_port('in', Boolean, PortDirection.IN)
+        model.add_port('out1', Boolean, PortDirection.OUT)
+
+        model.instantiate_ports(context)
+        # TODO(Jmeyer): Logic?
         return model

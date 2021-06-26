@@ -11,11 +11,12 @@ from lxml import etree
 import re
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import AddPart, BitsToWordPart, GreaterThanOrEqualPart, LessThanOrEqualPart, NTriggerPart, OrPart, AndPart, PTriggerPart, PartTemplate, CoilPart, WordToBitsPart
+from fbdplc.parts import AckGlobalPart, AddPart, BitsToWordPart, GreaterThanOrEqualPart, GreaterThanPart, LessThanOrEqualPart, MovePart, NTriggerPart, OrPart, AndPart, PTriggerPart, PartTemplate, CoilPart, TOfPart, TOnPart, WordToBitsPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
 MATCH_TIME = re.compile(r'T#(\d+)(\w+)')
+
 
 def parse_time_string(text: str) -> int:
     ''' Parses a time string, ala "T#2S", and returns the equivalent number of milliseconds '''
@@ -28,6 +29,7 @@ def parse_time_string(text: str) -> int:
     }
 
     return count * INTERVALS[interval]
+
 
 def _remove_namespaces(root):
     for elem in root.getiterator():
@@ -82,7 +84,7 @@ def parse_access(node, ns: str):
         assert value_node.text.startswith('T#')
         ms = parse_time_string(value_node.text)
         return LiteralConstantAccess(ms, Time)
-        
+
     else:
         raise ValueError(f'Unimplemented scope for Access, "{scope}"')
 
@@ -317,11 +319,36 @@ def parse_le(ns, node):
     le = LessThanOrEqualPart(ns, SORT_MAP[a['type']])
     return le
 
+
+def parse_gt(ns, node):
+    a = part_attributes(node)
+    gt = GreaterThanPart(ns, SORT_MAP[a['type']])
+    return gt
+
+
 def parse_w_bo(ns, node):
     return WordToBitsPart(ns, Integer)
 
+
 def parse_bo_w(ns, node):
     return BitsToWordPart(ns, Integer)
+
+
+# These all require interacting with 'instance' data which is yet to be supported
+def parse_ton(ns, node):
+    return TOnPart(ns)
+
+
+def parse_tof(ns, node):
+    return TOfPart(ns)
+
+
+def parse_ack_gl(ns, node):
+    return AckGlobalPart(ns)
+
+
+def parse_move(ns, node):
+    return MovePart(ns)
 
 
 def parse_part(ns, node):
@@ -340,7 +367,12 @@ def parse_part(ns, node):
         'W_BO': parse_w_bo,
         'BO_W': parse_bo_w,
         'PBox': lambda ns, _: PTriggerPart(ns),
-        'NBox': lambda ns, _: NTriggerPart(ns)
+        'NBox': lambda ns, _: NTriggerPart(ns),
+        'TON': parse_ton,
+        'Gt': parse_gt,
+        'TOF': parse_tof,
+        'ACK_GL': parse_ack_gl,
+        'Move': parse_move,
     }
 
     prefix = ':'.join([ns, part_type + uid])

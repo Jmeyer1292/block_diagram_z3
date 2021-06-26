@@ -1,3 +1,4 @@
+from z3.z3types import Z3Exception
 from fbdplc.utils import namespace
 from fbdplc.functions import Block, Call, Program, Scope
 from typing import List, Union
@@ -162,7 +163,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
 
         def get_var(resolvable):
             if isinstance(resolvable, MemoryAccessProxy):
-                scope: Scope = resolvable.scope
+                scope = resolvable.scope
+                print(f'Get var {resolvable.name} from {scope}')
                 return scope.read(resolvable.name)
             elif isinstance(resolvable, PartPort):
                 return resolvable.external_var()
@@ -179,7 +181,13 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         if not has_write_to_mem:
             a_var = get_var(a)
             b_var = get_var(b)
-            program_model.assertions.append(a_var == b_var)
+            try:
+                program_model.assertions.append(a_var == b_var)
+            except Z3Exception:
+                print('An exception occurred while assigning wires')
+                print(a_var, a_var.sort())
+                print(b_var, b_var.sort())
+                raise
         else:
             the_access = None
             the_port = None

@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer
+from fbdplc.sorts import Boolean, Integer, Time
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
@@ -71,7 +71,7 @@ class BlockVariables:
         return v
 
     def all_variables(self):
-        return self.input + self.output + self.inout + self.temp + self.constant + self.ret
+        return self.input + self.output + self.inout + self.temp + self.constant + self.ret + self.statics
 
 
 class Block:
@@ -127,6 +127,9 @@ class Scope:
             elif vtype == Integer:
                 self._variables[uname] = Integer.make(handle, ctx=ctx)
                 self._sorts[name] = Integer
+            elif vtype == Time:
+                self._variables[name] = Time.make(handle, ctx=ctx)
+                self._sorts[name] = Time
             else:
                 raise NotImplementedError(
                     f'Variable type {vtype} not yet supported by Scope')
