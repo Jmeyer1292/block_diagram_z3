@@ -11,6 +11,12 @@ def test_mem():
     x = mem.read('foo')
     print(x, x.sort())
 
+    x1 = mem.write('foo')
+    print(x1, x1.sort())
+
+    x2 = mem.write('foo')
+    print(x2, x2.sort())
+
 def test_mem_udt():
     schema = make_schema('Point', {'x': Integer, 'y': Integer})
     
@@ -22,5 +28,8 @@ def test_mem_udt():
     print(mem._variables)
 
     proxy = mem.read('p0', 0, schema)
-    print(proxy)
-    print(proxy.fields)
+    print(proxy, proxy.fields)
+    
+    proxy1 = mem.write('p0', schema)
+    print(proxy1, proxy1.fields)
+    

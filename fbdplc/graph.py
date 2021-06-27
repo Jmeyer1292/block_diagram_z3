@@ -69,17 +69,20 @@ class MemoryProxy:
     def lastest_name(self, name: str):
         return self.ir_name(name, self.data[name][0])
     
+    def __make_var(self, ir, sort):
+        unique_ir_name = namespace(self.ns, ir)
+        v = sort.make(unique_ir_name, self.ctx)
+        self._variables[ir] = v
+        return v
+
     def __create(self, name: str, sort):
         # Should this have sort too?
         assert name not in self.data
         assert sort in SORT_MAP.values()
-        self.data[name] = (0, sort)
+        self.data[name] = [0, sort]
         
         ir_name = self.lastest_name(name)
-        unique_ir_name = namespace(self.ns, ir_name)
-        v = sort.make(unique_ir_name, self.ctx)
-        self._variables[ir_name] = v
-        return v
+        return self.__make_var(ir_name, sort)
     
     def create(self, name: str, sort):
         assert sort in SORT_MAP.values() or sort in g_udt_archive.values()
@@ -113,7 +116,27 @@ class MemoryProxy:
         else:
             return self.__read(name, index, sort)
 
-    
+    def __write(self, name: str, sort = None):
+        # Only works on primitives
+        assert name in self.data, f'{name} not in memory object'
+        entry = self.data[name]
+        if sort is not None:
+            assert sort == entry[1], f'Types do not match {sort} vs {entry[1]}'
+        else:
+            sort = entry[1]
+
+        entry[0] = entry[0] + 1
+        return self.__make_var(self.ir_name(name, entry[0]), sort)
+
+    def write(self, name: str, sort = None):
+        if isinstance(sort, UDTSchema):
+            instance = UDTInstance(sort)
+            for n, v in sort.iterfields(name + '.'):
+                variable = self.__write(n, v)
+                instance.fields[n] = variable
+            return instance
+        else:
+            return self.__write(name, sort)
 
 def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:
     result = ScopeContext(a.name + '+' + b.name)
