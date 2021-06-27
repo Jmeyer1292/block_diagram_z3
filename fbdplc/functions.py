@@ -2,7 +2,7 @@ from fbdplc.sorts import Boolean, Integer, Time
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
-from fbdplc.graph import ScopeContext, VariableResolver
+from fbdplc.graph import MemoryProxy, ScopeContext, VariableResolver
 import enum
 import z3
 
@@ -94,12 +94,6 @@ class Block:
         self.networks = []
 
 
-class GlobalMemory:
-    def __init__(self, ctx: z3.Context):
-        self.ctx = ctx
-        self.ssa = VariableResolver()
-
-
 class Scope:
     def __init__(self, ns: str, uid: str, ctx: z3.Context, block: Block):
         self.ns = f'{ns}$({uid}){block.name}'
@@ -109,45 +103,13 @@ class Scope:
         self.name = block.name
         self.variable_iface = block.variables
         self.ctx = ctx
-        # Instantiate variables for this scope
-        self._variables = {}
-        self._sorts = {}
-        self.ssa = VariableResolver()
 
+        self.mem = MemoryProxy(ns, ctx)
         self._make_variables(ctx)
 
     def _make_variables(self, ctx: z3.Context):
         for name, vtype in self.variable_iface.all_variables():
-            is_struct = isinstance(vtype, UserDefinedType)
-
-            if is_struct:
-                vars = vtype.flatten(name)
-                self._sorts[name] = vtype
-            else:
-                vars = [(name, vtype)]
-
-            for c, ctype in vars:
-                print(f'local scope adding {c} of sort {ctype}')
-                # the local name
-                uname = self.ssa.read(c)
-                # the absolute name
-                handle = namespace(self.ns, uname)
-                # primitive
-                if ctype == Boolean:
-                    self._variables[uname] = Boolean.make(handle, ctx=ctx)
-                    self._sorts[c] = Boolean
-                elif ctype == Integer:
-                    self._variables[uname] = Integer.make(handle, ctx=ctx)
-                    self._sorts[c] = Integer
-                elif ctype == Time:
-                    self._variables[name] = Time.make(handle, ctx=ctx)
-                    self._sorts[c] = Time
-                else:
-                    raise NotImplementedError(
-                        f'Variable type {ctype} not yet supported by Scope')
-
-    def var(self, name):
-        return self._variables[name]
+            self.mem.create(name, vtype)
 
     def link_call(self, part: PartModel):
         assertions = []
@@ -157,22 +119,12 @@ class Scope:
         for name, vtype in self.variable_iface.input:
             # Read the port variable(s)
             x = part.ivar(name)
-            # print(x, type(x))
-            # Read the local scope variable(s) in their initial form:
-            if isinstance(vtype, UserDefinedType):
-                n = self.ssa.read_block(name, 0)
-                for local, remote in zip(n, x):
-                    y = self._variables[local]
-                    assertions.append(remote == y)
-
-            else:
-                n = self.ssa.read(name, 0)
-                y = self._variables[n]
-                assertions.append(x == y)
+            y = self.mem.read(name, 0, vtype)
+            assertions.append(x == y)
 
         for name, vtype in self.variable_iface.output:
             x = part.ivar(name)
-            n = self.read(name)
+            n = self.mem.read(name, None, vtype)
             assertions.append(x == n)
 
         for name, vtype in self.variable_iface.inout:
@@ -196,8 +148,8 @@ class Scope:
             next_port = part.ivar(name)
             prev_port = part.ivar(f'_old_{name}')
             # this memory interface:
-            prev_instance = self.read(name, 0)
-            next_instance = self.read(name)
+            prev_instance = self.mem.read(name, 0, vtype)
+            next_instance = self.mem.read(name, None, vtype)
             print(f'Inout: {name}')
             assertions.append(prev_port == prev_instance)
             assertions.append(next_port == next_instance)
@@ -206,49 +158,10 @@ class Scope:
         return assertions
 
     def read(self, name: str, index=None):
-        # Read the latest intermediate variable name
-        # Make sure the base name exists
-        print(f'Reading {name}')
-        sort = self._sorts[name]
-        print(f'Sort {sort}')
-        if isinstance(sort, UserDefinedType): 
-            names = self.ssa.read_block(name, index)
-            print(f'read {names}')
-            return [self._variables[n] for n in names]
-        else:
-            unique_name = self.ssa.read(name, index)
-            return self._variables[unique_name]
+        return self.mem.read(name, index)
 
     def write(self, name: str):
-        sort_of_name = self._sorts.get(name)
-        if sort_of_name is None:
-            raise RuntimeError(f'failed to write; {name} not in list of known, named memory symbols {self.ssa.list_variables()}')
-        
-        to_write = []
-        if isinstance(sort_of_name, UserDefinedType):
-            to_write.extend(sort_of_name.flatten(name))
-        else:
-            to_write.append((name, self._sorts[name]))
-        
-        variables = []
-        for lname, ltype in to_write:
-            uname = self.ssa.write(lname)
-            handle = namespace(self.ns, uname)
-            sort = ltype
-            if sort == Boolean:
-                v = Boolean.make(handle, ctx=self.ctx)
-            elif sort == Integer:
-                v = Integer.make(handle, ctx=self.ctx)
-            else:
-                raise NotImplementedError(f'Bad type {sort}')
-            self._variables[uname] = v
-
-            variables.append(v)
-        
-        if len(variables) == 1:
-            return variables[0]
-        else:
-            return variables
+        return self.mem.write(name)
 
 
 class Call(PartTemplate):
