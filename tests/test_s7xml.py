@@ -44,10 +44,10 @@ def test_udt_parse():
     udt = s7mxl.parse_udt(tree)
     assert udt.name == '"FooBar"'
     assert len(udt.fields) == 4
-    assert udt.fields[0][0] == 'status_a.a'
-    assert udt.fields[1][0] == 'status_a.b'
-    assert udt.fields[2][0] == 'status_a.c'
-    assert udt.fields[3][0] == 'status_a.d'
+    assert udt.fields[0][0] == 'a'
+    assert udt.fields[1][0] == 'b'
+    assert udt.fields[2][0] == 'c'
+    assert udt.fields[3][0] == 'd'
 
 def test_time_parse():
   assert s7mxl.parse_time_string('T#2S') == 2000

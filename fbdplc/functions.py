@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer, Time
+from fbdplc.sorts import Boolean, Integer, Time, UserDefinedType
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
@@ -118,21 +118,28 @@ class Scope:
 
     def _make_variables(self, ctx: z3.Context):
         for name, vtype in self.variable_iface.all_variables():
-            uname = self.ssa.read(name)
-            handle = namespace(self.ns, uname)
+            is_struct = isinstance(vtype, UserDefinedType)
 
-            if vtype == Boolean:
-                self._variables[uname] = Boolean.make(handle, ctx=ctx)
-                self._sorts[name] = Boolean
-            elif vtype == Integer:
-                self._variables[uname] = Integer.make(handle, ctx=ctx)
-                self._sorts[name] = Integer
-            elif vtype == Time:
-                self._variables[name] = Time.make(handle, ctx=ctx)
-                self._sorts[name] = Time
+            if not is_struct:
+                # primitive
+                uname = self.ssa.read(name)
+                handle = namespace(self.ns, uname)
+                if vtype == Boolean:
+                    self._variables[uname] = Boolean.make(handle, ctx=ctx)
+                    self._sorts[name] = Boolean
+                elif vtype == Integer:
+                    self._variables[uname] = Integer.make(handle, ctx=ctx)
+                    self._sorts[name] = Integer
+                elif vtype == Time:
+                    self._variables[name] = Time.make(handle, ctx=ctx)
+                    self._sorts[name] = Time
+                else:
+                    raise NotImplementedError(
+                        f'Variable type {vtype} not yet supported by Scope')
             else:
-                raise NotImplementedError(
-                    f'Variable type {vtype} not yet supported by Scope')
+                # We're in a UDT
+                # We need to flatten and allocate all of the variables
+                vtype.make()
 
     def var(self, name):
         return self._variables[name]
@@ -186,6 +193,7 @@ class Scope:
     def read(self, name: str, index=None):
         # Read the latest intermediate variable name
         # Make sure the base name exists
+        print(f'Reading {name}')
         unique_name = self.ssa.read(name, index)
         return self._variables[unique_name]
 

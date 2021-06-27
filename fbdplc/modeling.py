@@ -157,8 +157,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             else:
                 assert(isinstance(conn, NamedConnection))
                 part_iface: PartModel = callables[conn.target_uid]
-                print(f'Connection {conn} is a part connection: {part_iface.name}::{conn.target_port}')
-                print(part_iface.ports)
+                # print(f'Connection {conn} is a part connection: {part_iface.name}::{conn.target_port}')
+                # print(part_iface.ports)
                 port = part_iface.ports[conn.target_port]
                 return port
 
