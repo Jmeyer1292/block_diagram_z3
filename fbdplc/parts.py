@@ -263,6 +263,25 @@ class LessThanOrEqualPart(PartTemplate):
         return model
 
 
+class LessThanPart(PartTemplate):
+    def __init__(self, name, port_type):
+        super().__init__(name)
+        self.port_type = port_type
+
+    def instantiate(self, ns, context: z3.Context) -> PartModel:
+        instance_name = namespace(ns, self.name)
+        model = PartModel(instance_name)
+        model.add_port('in1', self.port_type, PortDirection.IN)
+        model.add_port('in2', self.port_type, PortDirection.IN)
+        model.add_port('out', Boolean, PortDirection.OUT)
+        model.instantiate_ports(context)
+
+        logic = model.ivar('out') == (model.ivar('in1') < model.ivar('in2'))
+        model.assertions.append(logic)
+
+        return model
+
+
 class PTriggerPart(PartTemplate):
     def __init__(self, name):
         super().__init__(name)

@@ -11,7 +11,7 @@ from lxml import etree
 import re
 
 from fbdplc.modeling import ScopeContext
-from fbdplc.parts import AckGlobalPart, AddPart, BitsToWordPart, GreaterThanOrEqualPart, GreaterThanPart, LessThanOrEqualPart, MovePart, NTriggerPart, OrPart, AndPart, PTriggerPart, PartTemplate, CoilPart, TOfPart, TOnPart, WordToBitsPart
+from fbdplc.parts import AckGlobalPart, AddPart, BitsToWordPart, GreaterThanOrEqualPart, GreaterThanPart, LessThanOrEqualPart, LessThanPart, MovePart, NTriggerPart, OrPart, AndPart, PTriggerPart, PartTemplate, CoilPart, TOfPart, TOnPart, WordToBitsPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
@@ -320,6 +320,12 @@ def parse_le(ns, node):
     return le
 
 
+def parse_lt(ns, node):
+    a = part_attributes(node)
+    le = LessThanPart(ns, SORT_MAP[a['type']])
+    return le
+
+
 def parse_gt(ns, node):
     a = part_attributes(node)
     gt = GreaterThanPart(ns, SORT_MAP[a['type']])
@@ -364,6 +370,7 @@ def parse_part(ns, node):
         'Add': parse_add,
         'Ge': parse_ge,
         'Le': parse_le,
+        'Lt': parse_lt,
         'W_BO': parse_w_bo,
         'BO_W': parse_bo_w,
         'PBox': lambda ns, _: PTriggerPart(ns),

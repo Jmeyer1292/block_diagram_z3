@@ -1,0 +1,10 @@
+﻿TYPE "SensorCommand"
+VERSION : 0.1
+   STRUCT
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      mute { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      case { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_STRUCT;
+
+END_TYPE
+
