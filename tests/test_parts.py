@@ -1,5 +1,5 @@
-from fbdplc.sorts import Boolean, Integer
-from fbdplc.parts import AddPart, AndPart, BitsToWordPart, CoilPart, GreaterThanOrEqualPart, LessThanOrEqualPart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection, WordToBitsPart
+from fbdplc.sorts import Boolean, Integer, make_schema
+from fbdplc.parts import AddPart, AndPart, BitsToWordPart, CoilPart, GreaterThanOrEqualPart, LessThanOrEqualPart, MovePart, NTriggerPart, OrPart, PTriggerPart, PartModel, PartPort, PortDirection, WordToBitsPart
 import z3
 
 
@@ -7,8 +7,9 @@ def _set_variables(part: PartModel, args):
     return [part.evar(name) == args[name] for name in args]
 
 
-def _test_case(part, inputs, outputs):
-    ctx = z3.Context()
+def _test_case(part, inputs, outputs, ctx = None):
+    if ctx is None:
+        ctx = z3.Context()
     solver = z3.Solver(ctx=ctx)
     part_model = part.instantiate('', ctx)
     # First model the internal logic:
@@ -181,3 +182,20 @@ def test_bo_w():
     _test_case(part, _helper(3), {'OUT': 3})
     _test_case(part, _helper(4), {'OUT': 4})
     _test_case(part, _helper(5), {'OUT': 5})
+
+
+def test_move_primitive():
+    part = MovePart('part')
+    part.port_type = Boolean
+    _test_case(part, {'in': True}, {'out1': True})
+    _test_case(part, {'in': False}, {'out1': False})
+
+
+def test_move_primitive():
+    part = MovePart('part')
+    schema = make_schema('Point', {'x': Integer, 'y': Integer})
+    part.port_type = schema
+
+    ctx = z3.Context()
+    p0 = schema.make('p0', ctx)
+    _test_case(part, {'in': p0}, {}, ctx)

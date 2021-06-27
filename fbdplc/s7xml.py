@@ -3,7 +3,7 @@ Parse an exported TIA Portal XML file representing a function block diagram
 program and parse it into its constituent graphs composed of parts and wires.
 '''
 
-from fbdplc.sorts import Boolean, Integer, SORT_MAP, Time, UserDefinedType
+from fbdplc.sorts import Boolean, Integer, SORT_MAP, Time, make_schema
 from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
 from typing import List, Tuple
@@ -110,15 +110,14 @@ def parse_udt(member_node: etree._Element):
     assert len(member_node) == 1
 
     # TODO(Jmeyer): I need examples of deep structs to reverse engineer the format
-    udt = UserDefinedType(root_datatype)
-
+    fields = {}
     for m in member_node[0][0]:
         assert m.tag == 'Member'
-        sort = m.get('Datatype')
+        sort = SORT_MAP[m.get('Datatype')]
         n = m.get('Name')
-        udt.fields.append((n, sort))
-
-    return udt
+        fields[n] = sort
+    
+    return make_schema(root_datatype, fields)
 
 
 def parse_function_block(root: etree._Element):
@@ -155,8 +154,6 @@ def parse_function_block(root: etree._Element):
                 print(f'{n} has a custom data structure of type {datatype}')
                 udt = parse_udt(member)
                 block.variables.add(section_enum, n, udt)
-                # for leaf_name, leaf_sort in udt.flatten():
-                #     block.variables.add(section_enum, leaf_name, SORT_MAP[leaf_sort])
             else:
                 block.variables.add(section_enum, n, SORT_MAP[datatype])
 

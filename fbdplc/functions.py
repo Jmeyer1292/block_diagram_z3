@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer, Time, UserDefinedType
+from fbdplc.sorts import Boolean, Integer, Time
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
