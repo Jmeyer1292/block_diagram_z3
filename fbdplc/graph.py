@@ -1,7 +1,7 @@
 from enum import unique
 
 from fbdplc.utils import namespace
-from fbdplc.sorts import SORT_MAP, UDTInstance, UDTSchema, g_udt_archive
+from fbdplc.sorts import SORT_MAP, UDTInstance, UDTSchema, g_udt_archive, in_archive
 import functools
 from typing import List
 
@@ -60,6 +60,7 @@ class MemoryProxy:
         self.data = {}
         # Maps unique_name: str -> Instance
         self._variables = {}
+        self._sorts = {}
 
     def list_variables(self):
         return [n for n in self.data]
@@ -82,14 +83,16 @@ class MemoryProxy:
         assert name not in self.data
         assert sort in SORT_MAP.values()
         self.data[name] = [0, sort]
+        self._sorts[name] = sort
         
         ir_name = self.lastest_name(name)
         return self.__make_var(ir_name, sort)
     
     def create(self, name: str, sort):
-        assert sort in SORT_MAP.values() or sort in g_udt_archive.values()
+        assert sort in SORT_MAP.values() or in_archive(sort), f'Unrecognized sort {sort}'
         
         if isinstance(sort, UDTSchema):
+            self._sorts[name] = sort
             for n, v in sort.iterfields(name + '.'):
                 self.__create(n, v)
         else:
@@ -113,7 +116,8 @@ class MemoryProxy:
             instance = UDTInstance(sort)
             for n, v in sort.iterfields(name + '.'):
                 variable = self.__read(n, index, v)
-                instance.fields[n] = variable
+                fieldname = '.'.join([ x for x in n.split('.')[1:]])
+                instance.fields[fieldname] = variable
             return instance
         else:
             return self.__read(name, index, sort)

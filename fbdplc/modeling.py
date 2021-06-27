@@ -75,7 +75,7 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
             if type(wire.b) == IdentConnection:
                 access = code.accesses[wire.b.target_uid]
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
-                    sort = scope._sorts[access.symbol]
+                    sort = scope.mem._sorts[access.symbol]
                     print(f'SORT IS {sort}')
                     return sort
         if type(wire.b) == NamedConnection and wire.b.target_uid == uid:

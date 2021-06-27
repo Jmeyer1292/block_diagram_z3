@@ -62,7 +62,7 @@ class UDTInstance:
         return f'UDTInstance({self.schema.name})'
 
     def __eq__(self, other):
-        if self.schema is not other.schema:
+        if self.schema.name != other.schema.name:
             raise RuntimeError(
                 f'Can not equate UDTs of different schema {self.schema} vs {other.schema}')
         
@@ -78,6 +78,12 @@ class UDTInstance:
 
 g_udt_archive = {}
 
+
+def in_archive(sort):
+    if not isinstance(sort, UDTSchema):
+        return False
+    else:
+        return sort.name in g_udt_archive
 
 def make_schema(name, parsed_schema):
     schema = UDTSchema(name)

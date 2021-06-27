@@ -34,6 +34,7 @@ class BlockVariables:
         self.ret = []
         # Only valid for FB block types
         self.statics = []
+        self.__types = {}
 
     def __str__(self):
         input = ','.join([f'({s[0]}, {s[1]})' for s in self.input])
@@ -65,7 +66,8 @@ class BlockVariables:
         else:
             raise RuntimeError(f'Unrecognized section enum {section}')
         data_section.append((name, datatype))
-
+        self.__types[name] = datatype
+    
     def interface_variables(self):
         v = self.input + self.output + self.inout
         return v
@@ -73,6 +75,8 @@ class BlockVariables:
     def all_variables(self):
         return self.input + self.output + self.inout + self.temp + self.constant + self.ret + self.statics
 
+    def type_of(self, name):
+        return self.__types.get(name)
 
 class Block:
     '''
@@ -119,6 +123,9 @@ class Scope:
             # Read the port variable(s)
             x = part.ivar(name)
             y = self.mem.read(name, 0, vtype)
+            print('X', x, x.fields)
+            print('Y', y, y.fields)
+
             assertions.append(x == y)
 
         for name, vtype in self.variable_iface.output:
@@ -157,10 +164,12 @@ class Scope:
         return assertions
 
     def read(self, name: str, index=None):
-        return self.mem.read(name, index)
+        # We'd like to apply some type info if we can
+
+        return self.mem.read(name, index, sort=self.variable_iface.type_of(name))
 
     def write(self, name: str):
-        return self.mem.write(name)
+        return self.mem.write(name, sort=self.variable_iface.type_of(name))
 
 
 class Call(PartTemplate):
