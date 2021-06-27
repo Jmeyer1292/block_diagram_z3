@@ -459,13 +459,15 @@ class MovePart(PartTemplate):
     def __init__(self, name):
         # TODO(Jmeyer): Support custom or different time types?
         super().__init__(name)
+        self.port_type = None
 
     def instantiate(self, ns, context: z3.Context) -> PartModel:
+        assert self.port_type is not None, "The Move part requires the port_type be set dynamically prior to instantiation"
         instance_name = namespace(ns, self.name)
         model = PartModel(instance_name)
 
-        model.add_port('in', Boolean, PortDirection.IN)
-        model.add_port('out1', Boolean, PortDirection.OUT)
+        model.add_port('in', self.port_type, PortDirection.IN)
+        model.add_port('out1', self.port_type, PortDirection.OUT)
 
         model.instantiate_ports(context)
         # TODO(Jmeyer): Logic?

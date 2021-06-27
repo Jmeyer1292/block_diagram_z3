@@ -4,8 +4,8 @@ from fbdplc.utils import namespace
 from fbdplc.functions import Block, Call, Program, Scope
 from typing import List, Union
 import z3
-from fbdplc.parts import CoilPart, PartModel, PartPort, PortDirection
-from fbdplc.wires import IdentConnection, NamedConnection, WireConnection
+from fbdplc.parts import CoilPart, MovePart, PartModel, PartPort, PortDirection
+from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import ScopeContext, VariableResolver, merge_nets
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
@@ -65,6 +65,26 @@ class MemoryAccessProxy:
         return f'MemoryAccessProxy({self.name} from {self.scope})'
 
 
+def hunt_for_type(uid, code: ScopeContext, scope: Scope):
+    result = None
+    for wire_id, wire in code.wires.items():
+        wire: Wire = wire
+        if type(wire.a) == NamedConnection and wire.a.target_uid == uid:
+            print('Wire b may have type hint:')
+            print(wire.b)
+            if type(wire.b) == IdentConnection:
+                access = code.accesses[wire.b.target_uid]
+                if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
+                    sort = scope._sorts[access.symbol]
+                    print(f'SORT IS {sort}')
+                    return sort
+        if type(wire.b) == NamedConnection and wire.b.target_uid == uid:
+            print('Wire a may have type hint:')
+            print(wire.a)
+    
+    return result
+
+
 def _model_block(program: Program, program_model: ProgramModel, block: Block, call_stack: List):
     ns = call_stack[-1].ns
     print(f'Considering block {block.name} w/ call_stack {call_stack}')
@@ -89,6 +109,12 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     # So the algorithm is loop over the parts and instantiate them from our block template:
     print('--Parts--')
     for uid, part_template in code.parts.items():
+        # I hate this format:
+        if isinstance(part_template, MovePart):
+            print('Is a move type')
+            part_template.port_type = hunt_for_type(uid, code, call_stack[-1])
+            assert part_template.port_type is not None
+        
         model: PartModel = part_template.instantiate(ns, program_model.ctx)
         callables[uid] = model
         program_model.assertions.extend(model.assertions)
@@ -218,11 +244,14 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
                 the_port_name = wire.a.target_port
 
             _prev = get_var(the_access)
+            print('_prev:', _prev)
             _next = get_writeable(the_access)
-
+            print('_next:', _next)
             other = get_var(the_port)
             # print(_next, _next.sort())
             # print(other, other.sort())
+            print('---EXPR---')
+            print(_next == other)
             program_model.assertions.append(_next == other)
 
             old = f'_old_{the_port_name}'

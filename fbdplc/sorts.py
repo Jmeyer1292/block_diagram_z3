@@ -18,6 +18,8 @@ class Time:
     def make(name: str, ctx: z3.Context):
         return z3.Int(name, ctx=ctx)
 
+class AnyType:
+    pass
 
 # Primitives
 SORT_MAP = {

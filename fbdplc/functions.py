@@ -1,3 +1,4 @@
+from experimental import UserDefinedDatatype
 from fbdplc.sorts import Boolean, Integer, Time, UserDefinedType
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
@@ -220,18 +221,35 @@ class Scope:
             return self._variables[unique_name]
 
     def write(self, name: str):
-        assert name in self.ssa.list_variables()
-        uname = self.ssa.write(name)
-        handle = namespace(self.ns, uname)
-        sort = self._sorts[name]
-        if sort == Boolean:
-            v = Boolean.make(handle, ctx=self.ctx)
-        elif sort == Integer:
-            v = Integer.make(handle, ctx=self.ctx)
+        sort_of_name = self._sorts.get(name)
+        if sort_of_name is None:
+            raise RuntimeError(f'failed to write; {name} not in list of known, named memory symbols {self.ssa.list_variables()}')
+        
+        to_write = []
+        if isinstance(sort_of_name, UserDefinedType):
+            to_write.extend(sort_of_name.flatten(name))
         else:
-            raise NotImplementedError('Bad type')
-        self._variables[uname] = v
-        return v
+            to_write.append((name, self._sorts[name]))
+        
+        variables = []
+        for lname, ltype in to_write:
+            uname = self.ssa.write(lname)
+            handle = namespace(self.ns, uname)
+            sort = ltype
+            if sort == Boolean:
+                v = Boolean.make(handle, ctx=self.ctx)
+            elif sort == Integer:
+                v = Integer.make(handle, ctx=self.ctx)
+            else:
+                raise NotImplementedError(f'Bad type {sort}')
+            self._variables[uname] = v
+
+            variables.append(v)
+        
+        if len(variables) == 1:
+            return variables[0]
+        else:
+            return variables
 
 
 class Call(PartTemplate):
