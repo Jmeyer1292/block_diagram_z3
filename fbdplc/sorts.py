@@ -39,8 +39,13 @@ class UserDefinedType:
         self.name = name
         self.fields = []
 
-    def make(self, name, ctx):
-        pass
+    def flatten(self, name):
+        variables = []
+        for varname, vartype in self.fields:
+            sort = SORT_MAP[vartype]
+            qualified_name = name + '.' + varname
+            variables.append((qualified_name, sort))
+        return variables
 
 
     def __str__(self):

@@ -120,26 +120,31 @@ class Scope:
         for name, vtype in self.variable_iface.all_variables():
             is_struct = isinstance(vtype, UserDefinedType)
 
-            if not is_struct:
-                # primitive
-                uname = self.ssa.read(name)
+            if is_struct:
+                vars = vtype.flatten(name)
+                self._sorts[name] = vtype
+            else:
+                vars = [(name, vtype)]
+
+            for c, ctype in vars:
+                print(f'local scope adding {c} of sort {ctype}')
+                # the local name
+                uname = self.ssa.read(c)
+                # the absolute name
                 handle = namespace(self.ns, uname)
-                if vtype == Boolean:
+                # primitive
+                if ctype == Boolean:
                     self._variables[uname] = Boolean.make(handle, ctx=ctx)
-                    self._sorts[name] = Boolean
-                elif vtype == Integer:
+                    self._sorts[c] = Boolean
+                elif ctype == Integer:
                     self._variables[uname] = Integer.make(handle, ctx=ctx)
-                    self._sorts[name] = Integer
-                elif vtype == Time:
+                    self._sorts[c] = Integer
+                elif ctype == Time:
                     self._variables[name] = Time.make(handle, ctx=ctx)
-                    self._sorts[name] = Time
+                    self._sorts[c] = Time
                 else:
                     raise NotImplementedError(
-                        f'Variable type {vtype} not yet supported by Scope')
-            else:
-                # We're in a UDT
-                # We need to flatten and allocate all of the variables
-                vtype.make()
+                        f'Variable type {ctype} not yet supported by Scope')
 
     def var(self, name):
         return self._variables[name]
