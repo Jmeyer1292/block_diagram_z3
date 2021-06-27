@@ -32,7 +32,7 @@ class VariableResolver:
 
     def read(self, name, idx=None):
         if idx is not None:
-            assert(name in self.data)
+            assert name in self.data, f'"{name}" not in variable resolver directory. Has {self.list_variables()}'
             return self.ir_name(name, idx)
 
         data = self.data.get(name, None)
@@ -40,6 +40,11 @@ class VariableResolver:
             self.data[name] = 0
             data = 0
         return self.ir_name(name, data)
+    
+    def read_block(self, name, idx=None):
+        xx = filter(lambda x: x.startswith(name + '.'), self.list_variables())
+        result = [self.read(x, idx=idx) for x in xx]
+        return result
 
 
 def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:

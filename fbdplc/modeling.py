@@ -193,6 +193,9 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             a_var = get_var(a)
             b_var = get_var(b)
             try:
+                print(f'A {a_var}')
+                print(f'B {b_var}')
+                assert isinstance(a_var, list) == isinstance(b_var, list)
                 program_model.assertions.append(a_var == b_var)
             except Z3Exception:
                 print('An exception occurred while assigning wires')

@@ -155,10 +155,20 @@ class Scope:
         # Each input is linked to the $0 instance of the variable
         # Each output is linked to the last instance
         for name, vtype in self.variable_iface.input:
+            # Read the port variable(s)
             x = part.ivar(name)
-            n = self.ssa.read(name, 0)
-            y = self._variables[n]
-            assertions.append(x == y)
+            # print(x, type(x))
+            # Read the local scope variable(s) in their initial form:
+            if isinstance(vtype, UserDefinedType):
+                n = self.ssa.read_block(name, 0)
+                for local, remote in zip(n, x):
+                    y = self._variables[local]
+                    assertions.append(remote == y)
+
+            else:
+                n = self.ssa.read(name, 0)
+                y = self._variables[n]
+                assertions.append(x == y)
 
         for name, vtype in self.variable_iface.output:
             x = part.ivar(name)
@@ -199,8 +209,15 @@ class Scope:
         # Read the latest intermediate variable name
         # Make sure the base name exists
         print(f'Reading {name}')
-        unique_name = self.ssa.read(name, index)
-        return self._variables[unique_name]
+        sort = self._sorts[name]
+        print(f'Sort {sort}')
+        if isinstance(sort, UserDefinedType): 
+            names = self.ssa.read_block(name, index)
+            print(f'read {names}')
+            return [self._variables[n] for n in names]
+        else:
+            unique_name = self.ssa.read(name, index)
+            return self._variables[unique_name]
 
     def write(self, name: str):
         assert name in self.ssa.list_variables()

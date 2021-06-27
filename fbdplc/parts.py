@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer, Time
+from fbdplc.sorts import Boolean, Integer, Time, UserDefinedType
 import z3
 from typing import Dict
 from fbdplc.utils import namespace
@@ -34,6 +34,14 @@ class PartPort:
             self._var = Integer.make(self.name, ctx=ctx)
         elif self.port_type == Time:
             self._var = Time.make(self.name, ctx=ctx)
+        elif isinstance(self.port_type, UserDefinedType):
+            print(f'Creating port of udt {self.port_type}')
+            components = self.port_type.flatten(self.name)
+            vars = []
+            for n, t in components:
+                vars.append(t.make(n, ctx=ctx))
+            print(f'PORT VARS: {vars}')
+            self._var = vars
         else:
             raise NotImplementedError(
                 f'Cannot instantiate port {self.name} of type {self.port_type} as this type is not yet implemented')
