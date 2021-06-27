@@ -1,4 +1,3 @@
-from experimental import UserDefinedDatatype
 from fbdplc.sorts import Boolean, Integer, Time, UserDefinedType
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
