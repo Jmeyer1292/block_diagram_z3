@@ -61,6 +61,8 @@ class MemoryProxy:
         # Maps unique_name: str -> Instance
         self._variables = {}
 
+    def list_variables(self):
+        return [n for n in self.data]
 
     @staticmethod
     def ir_name(name: str, access_no: int) -> str:

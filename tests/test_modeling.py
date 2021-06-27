@@ -203,6 +203,11 @@ def test_double_and():
     program.entry = double_and_block.name
     program_model = modeling.program_model(program)
 
+    print('---')
+    for a in program_model.assertions:
+        print(a, ',')
+    print('---')
+
     cases = _make_double_and_cases()
     for ins, outs in cases:
         exec_and_compare(program_model, ins, outs)

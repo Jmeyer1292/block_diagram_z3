@@ -14,7 +14,7 @@ def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solve
     for key, value in inputs.items():
         # Is this variable in the local scope or global memory?
         v = None
-        if key in program.root.ssa.list_variables():
+        if key in program.root.mem.list_variables():
             # local scope:
             v = program.root.read(key, 0)
         else:
@@ -41,7 +41,7 @@ def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outp
 
 def _memory_dict(model: z3.ModelRef, scope: Scope):
     mem = {}
-    for k in scope.ssa.list_variables():
+    for k in scope.mem.list_variables():
         v = scope.read(k)
         b: bool = model.eval(v)
         mem[k] = b

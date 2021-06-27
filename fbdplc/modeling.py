@@ -221,7 +221,6 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             try:
                 print(f'A {a_var}')
                 print(f'B {b_var}')
-                assert isinstance(a_var, list) == isinstance(b_var, list)
                 program_model.assertions.append(a_var == b_var)
             except Z3Exception:
                 print('An exception occurred while assigning wires')
@@ -244,14 +243,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
                 the_port_name = wire.a.target_port
 
             _prev = get_var(the_access)
-            print('_prev:', _prev)
             _next = get_writeable(the_access)
-            print('_next:', _next)
             other = get_var(the_port)
-            # print(_next, _next.sort())
-            # print(other, other.sort())
-            print('---EXPR---')
-            print(_next == other)
             program_model.assertions.append(_next == other)
 
             old = f'_old_{the_port_name}'

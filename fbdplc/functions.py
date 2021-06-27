@@ -97,14 +97,13 @@ class Block:
 class Scope:
     def __init__(self, ns: str, uid: str, ctx: z3.Context, block: Block):
         self.ns = f'{ns}$({uid}){block.name}'
-        print(f'Creating Scope {block.name} in {self.ns}')
         # A unique identifier for *this* call within the given namespace, 'ns'
         self.uid = uid
         self.name = block.name
         self.variable_iface = block.variables
         self.ctx = ctx
 
-        self.mem = MemoryProxy(ns, ctx)
+        self.mem = MemoryProxy(self.ns, ctx)
         self._make_variables(ctx)
 
     def _make_variables(self, ctx: z3.Context):
