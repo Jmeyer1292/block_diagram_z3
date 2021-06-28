@@ -26,6 +26,7 @@ def test_or():
     exec_and_compare(model, {'ToSafety.a': True,
                      'ToSafety.b': True}, {'a_or_b': True})
 
+
 def test_or_assertions():
     program = Program('test_or')
     main_block = Block('main')
@@ -146,7 +147,8 @@ def test_fc_call():
     program = Program('test_fc_call')
     main_block = Block('main')
     main_block.networks.append(parse_from_file('testdata/fc_call.xml')[0])
-    main_block.variables.temp = [('a', Boolean), ('b', Boolean), ('ton', Boolean)]
+    main_block.variables.temp = [
+        ('a', Boolean), ('b', Boolean), ('ton', Boolean)]
 
     user_and_block = parse_function_from_file('testdata/UserAnd.xml')
     program.blocks[main_block.name] = main_block
@@ -244,3 +246,30 @@ def test_user_add():
     program.entry = _load_block(program, 'testdata/UserAdd.xml')
     model = modeling.program_model(program)
     exec_and_compare(model, {'a': 1, 'b': 5}, {'result': 6})
+
+
+def test_sensor_examples():
+    '''
+    See the code in testdata/sensor/
+    '''
+    program = Program('sensor')
+    program.entry = _load_block(program, 'testdata/sensor/RunSensors.xml')
+    _load_block(program, 'testdata/sensor/UpdateSensor.xml')
+    model = modeling.program_model(program)
+
+    command_a = {
+        'command_a.enable': True,
+        'command_a.mute': False,
+        'command_a.case': 0,
+    }
+    command_b = {
+        'command_b.enable': True,
+        'command_b.mute': False,
+        'command_b.case': 0,
+    }
+
+    inputs = {}
+    inputs.update(command_a)
+    inputs.update(command_b)
+
+    exec_and_compare(model, inputs, {'all_ok': True})
