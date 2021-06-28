@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer, Time
+from fbdplc.sorts import Boolean, Integer, Time, UDTSchema
 from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
@@ -67,7 +67,7 @@ class BlockVariables:
             raise RuntimeError(f'Unrecognized section enum {section}')
         data_section.append((name, datatype))
         self.__types[name] = datatype
-    
+
     def interface_variables(self):
         v = self.input + self.output + self.inout
         return v
@@ -77,6 +77,7 @@ class BlockVariables:
 
     def type_of(self, name):
         return self.__types.get(name)
+
 
 class Block:
     '''
@@ -123,9 +124,6 @@ class Scope:
             # Read the port variable(s)
             x = part.ivar(name)
             y = self.mem.read(name, 0, vtype)
-            print('X', x, x.fields)
-            print('Y', y, y.fields)
-
             assertions.append(x == y)
 
         for name, vtype in self.variable_iface.output:
@@ -134,8 +132,6 @@ class Scope:
             assertions.append(x == n)
 
         for name, vtype in self.variable_iface.inout:
-            # raise NotImplementedError(
-            #     'in-out variables in a called block interface')
             # TODO(Jmeyer): For reference types we can either:
             #   1. Transform the function into something with no side effects
             #
@@ -156,16 +152,12 @@ class Scope:
             # this memory interface:
             prev_instance = self.mem.read(name, 0, vtype)
             next_instance = self.mem.read(name, None, vtype)
-            print(f'Inout: {name}')
             assertions.append(prev_port == prev_instance)
             assertions.append(next_port == next_instance)
-            print(f'\tBar {assertions[-1]} {assertions[-2]}')
 
         return assertions
 
     def read(self, name: str, index=None):
-        # We'd like to apply some type info if we can
-
         return self.mem.read(name, index, sort=self.variable_iface.type_of(name))
 
     def write(self, name: str):
