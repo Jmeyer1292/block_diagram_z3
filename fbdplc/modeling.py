@@ -1,4 +1,4 @@
-from fbdplc.sorts import Boolean, Integer
+from fbdplc.sorts import Boolean, Integer, UDTInstance
 from z3.z3types import Z3Exception
 from fbdplc.utils import namespace
 from fbdplc.functions import Block, Call, Program, Scope
@@ -245,6 +245,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             _prev = get_var(the_access)
             _next = get_writeable(the_access)
             other = get_var(the_port)
+            if isinstance(_next, UDTInstance):
+                print(f'UDT: {_next.fields}')
             program_model.assertions.append(_next == other)
 
             old = f'_old_{the_port_name}'

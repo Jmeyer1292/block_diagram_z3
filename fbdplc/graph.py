@@ -93,8 +93,8 @@ class MemoryProxy:
         
         if isinstance(sort, UDTSchema):
             self._sorts[name] = sort
-            for n, v in sort.iterfields(name + '.'):
-                self.__create(n, v)
+            for n, v in sort.iterfields():
+                self.__create(name + '.' + n, v)
         else:
             self.__create(name, sort)
     
@@ -114,10 +114,9 @@ class MemoryProxy:
     def read(self, name: str, index = None, sort = None):
         if isinstance(sort, UDTSchema):
             instance = UDTInstance(sort)
-            for n, v in sort.iterfields(name + '.'):
-                variable = self.__read(n, index, v)
-                fieldname = '.'.join([ x for x in n.split('.')[1:]])
-                instance.fields[fieldname] = variable
+            for n, v in sort.iterfields():
+                variable = self.__read(name + '.' + n, index, v)
+                instance.fields[n] = variable
             return instance
         else:
             return self.__read(name, index, sort)
@@ -137,8 +136,8 @@ class MemoryProxy:
     def write(self, name: str, sort = None):
         if isinstance(sort, UDTSchema):
             instance = UDTInstance(sort)
-            for n, v in sort.iterfields(name + '.'):
-                variable = self.__write(n, v)
+            for n, v in sort.iterfields():
+                variable = self.__write(name + '.' + n, v)
                 instance.fields[n] = variable
             return instance
         else:
