@@ -10,3 +10,5 @@
 
  * Expand support to static calls 
 
+
+My biggest issue at the moment is that global memory is untyped
