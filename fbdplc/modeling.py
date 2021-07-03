@@ -32,18 +32,29 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
     result = None
     for wire_id, wire in code.wires.items():
         wire: Wire = wire
-        if type(wire.a) == NamedConnection and wire.a.target_uid == uid:
-            print('Wire b may have type hint:')
-            print(wire.b)
+        # Test to see if wire endpoint 'a' is connecting to the part whose
+        # type we wish to infer.
+        a_matches = type(
+            wire.a) == NamedConnection and wire.a.target_uid == uid
+        b_matches = type(
+            wire.b) == NamedConnection and wire.b.target_uid == uid
+
+        if a_matches:
             if type(wire.b) == IdentConnection:
                 access = code.accesses[wire.b.target_uid]
+                print(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
                     sort = scope.mem._sorts[access.symbol]
-                    print(f'SORT IS {sort}')
+                    print(f'\tSort determined to be {sort}')
                     return sort
-        if type(wire.b) == NamedConnection and wire.b.target_uid == uid:
-            print('Wire a may have type hint:')
-            print(wire.a)
+        elif b_matches:
+            if type(wire.a) == IdentConnection:
+                access = code.accesses[wire.a.target_uid]
+                print(f'\tOther end is a {access}')
+                if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
+                    sort = scope.mem._sorts[access.symbol]
+                    print(f'\tSort determined to be {sort}')
+                    return sort
 
     return result
 
@@ -65,7 +76,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         print(f'Processing access {access}')
         if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
             # TODO(Jmeyer): Only supports bools?
-            isbool = True #not access.symbol.endswith('case')
+            isbool = not access.symbol.endswith('case')
             program_model.global_mem.create(
                 access.symbol, Integer if not isbool else Boolean, unique=False)
 
@@ -76,9 +87,10 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     for uid, part_template in code.parts.items():
         # I hate this format:
         if isinstance(part_template, MovePart):
-            print('Is a move type')
+            print(
+                f'A part requiring type inference was detected: {part_template}')
             part_template.port_type = hunt_for_type(uid, code, call_stack[-1])
-            assert part_template.port_type is not None
+            assert part_template.port_type is not None, f'Type inference failed for {part_template}'
 
         model: PartModel = part_template.instantiate(ns, program_model.ctx)
         callables[uid] = model
