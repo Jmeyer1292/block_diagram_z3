@@ -44,8 +44,7 @@ class VariableResolver:
             self.data[name] = 0
             data = 0
         return self.ir_name(name, data)
-    
-    
+
     def create(self, name: str):
         # Should this have sort too?
         assert name not in self.data
@@ -71,47 +70,50 @@ class MemoryProxy:
 
     def lastest_name(self, name: str):
         return self.ir_name(name, self.data[name][0])
-    
+
     def __make_var(self, ir, sort):
         unique_ir_name = namespace(self.ns, ir)
         v = sort.make(unique_ir_name, self.ctx)
         self._variables[ir] = v
         return v
 
-    def __create(self, name: str, sort):
+    def __create(self, name: str, sort, unique=True):
         # Should this have sort too?
-        assert name not in self.data
-        assert sort in SORT_MAP.values()
+        assert not unique or (
+            name not in self.data), f'Symbol "{name}" already in memory'
+        assert sort in SORT_MAP.values(), f'Symbol type {sort} not recognized'
         self.data[name] = [0, sort]
         self._sorts[name] = sort
-        
+
         ir_name = self.lastest_name(name)
         return self.__make_var(ir_name, sort)
-    
-    def create(self, name: str, sort):
-        assert sort in SORT_MAP.values() or in_archive(sort), f'Unrecognized sort {sort}'
-        
+
+    def create(self, name: str, sort, unique=True):
+        assert sort in SORT_MAP.values() or in_archive(
+            sort), f'Unrecognized sort {sort}'
+
         if isinstance(sort, UDTSchema):
             self._sorts[name] = sort
             for n, v in sort.iterfields():
-                self.__create(name + '.' + n, v)
+                self.__create(name + '.' + n, v, unique)
         else:
-            self.__create(name, sort)
-    
-    def __read(self, name: str, index = None, sort = None):
+            self.__create(name, sort, unique)
+
+    def __read(self, name: str, index=None, sort=None):
         assert name in self.data, f'{name} not in memory object'
 
         entry = self.data[name]
         read_no = entry[0] if index is None else index
-        assert read_no <= entry[0], f'Attempting to read an index that doesnt exist for {name}: {read_no}'  
+        assert read_no <= entry[
+            0], f'Attempting to read an index that doesnt exist for {name}: {read_no}'
 
         ir = self.ir_name(name, read_no)
         v = self._variables[ir]
         if sort is not None:
             assert sort == entry[1], 'Types do not match'
         return v
-    
-    def read(self, name: str, index = None, sort = None):
+
+    def read(self, name: str, index=None, sort=None):
         if isinstance(sort, UDTSchema):
             instance = UDTInstance(sort)
             for n, v in sort.iterfields():
@@ -121,7 +123,7 @@ class MemoryProxy:
         else:
             return self.__read(name, index, sort)
 
-    def __write(self, name: str, sort = None):
+    def __write(self, name: str, sort=None):
         # Only works on primitives
         assert name in self.data, f'{name} not in memory object'
         entry = self.data[name]
@@ -133,7 +135,7 @@ class MemoryProxy:
         entry[0] = entry[0] + 1
         return self.__make_var(self.ir_name(name, entry[0]), sort)
 
-    def write(self, name: str, sort = None):
+    def write(self, name: str, sort=None):
         if isinstance(sort, UDTSchema):
             instance = UDTInstance(sort)
             for n, v in sort.iterfields():
@@ -142,6 +144,7 @@ class MemoryProxy:
             return instance
         else:
             return self.__write(name, sort)
+
 
 def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:
     result = ScopeContext(a.name + '+' + b.name)

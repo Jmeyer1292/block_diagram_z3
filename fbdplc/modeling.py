@@ -62,11 +62,12 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     code = merge_nets(block.networks)
 
     for uid, access in code.accesses.items():
+        print(f'Processing access {access}')
         if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
             # TODO(Jmeyer): Only supports bools?
-            isbool = not access.symbol.endswith('case')
+            isbool = True #not access.symbol.endswith('case')
             program_model.global_mem.create(
-                access.symbol, Integer if not isbool else Boolean)
+                access.symbol, Integer if not isbool else Boolean, unique=False)
 
     # Build a dictionary of instantiated parts
     callables = {}
