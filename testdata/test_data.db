@@ -5,6 +5,7 @@ NON_RETAIN
     VAR
         source { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
         flag : Bool;
+        foo: "UserDataType";
     END_VAR
 
 BEGIN

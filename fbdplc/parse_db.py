@@ -19,6 +19,9 @@ db_grammar = '''
     var_decl: NAME property? ":" TYPE ";"
 
     TYPE: NAME
+        | ESCAPED_STRING
+
+
 
     init_block: "BEGIN" assignment*
 
