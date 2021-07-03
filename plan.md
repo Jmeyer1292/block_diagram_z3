@@ -1,11 +1,11 @@
 # Impl Plan
 
- * Expand the parts library
-    * Timers {TON, TOFF}
-    * Other boolean primitives
- * Expand user data type support
-   * assignment of user data types
- 
+ * Improve analysis and processing of real programs.
+ * Global memory typing and static call support.
+
+ * How to model timers?
+   * 
+
  * Expand global memory and DB support 
 
  * Expand support to static calls 

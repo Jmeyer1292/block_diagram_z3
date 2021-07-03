@@ -167,7 +167,11 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
                 # print(f'Connection {conn} is a memory access: {access}')
                 # 3 types of memory access right now:
                 if isinstance(access, SymbolConstantAccess):
-                    assert(False)
+                    if access.scope == 'LocalConstant':
+                        return MemoryAccessProxy(access.symbol, call_stack[-1])
+                    else:
+                        raise NotImplementedError(
+                            f'Unhandled scope {access.scope} in Symbolic Constant Access')
                 elif isinstance(access, LiteralConstantAccess):
                     return access.value
                 elif isinstance(access, SymbolAccess):

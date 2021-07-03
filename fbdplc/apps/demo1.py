@@ -63,11 +63,12 @@ def main():
     print(_memory_dict(counter_example, model.root))
     # As you can see, the right scanner is breached and the machine is moving quickly
     # so the request for mute is not granted but we still didn't command a stop.
-    #   {   'is_slow': False, 'left_clear': True,
+    #   {
+    #       'is_slow': False, 'left_clear': True,
     #       'right_clear': False, 'mute_req': True,
     #       'estop_clear': True, 'stop': False,
     #       'mute_granted': False, 'scanners_ok': True
-    #    }
+    #   }
 
 
 if __name__ == '__main__':

@@ -180,7 +180,7 @@ def test_two_nets():
 
 
 # TODO(Jmeyer): After the latest refactor, this function is failing.
-def __test_constants():
+def test_constants():
     ''' Psuedo code:
     ton = False || ALWAYS_FALSE
 
@@ -193,6 +193,7 @@ def __test_constants():
     main_block = Block('main')
     main_block.networks.extend(parse_from_file('testdata/constants.xml'))
     main_block.variables.temp.extend([('ton', Boolean), ])
+    main_block.variables.constant.extend([('ALWAYS_FALSE', Boolean), ])
     program.blocks[main_block.name] = main_block
     model = modeling.program_model(program)
 

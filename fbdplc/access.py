@@ -30,7 +30,7 @@ class SymbolConstantAccess(Access):
         self.symbol = symbol
 
     def __str__(self):
-        return f'SymbolConstantAccess("{self.symbol}")'
+        return f'SymbolConstantAccess("{self.symbol}" @ scope={self.scope})'
 
 
 class LiteralConstantAccess(Access):
