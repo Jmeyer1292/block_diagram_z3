@@ -6,49 +6,8 @@ from typing import List, Union
 import z3
 from fbdplc.parts import CoilPart, MovePart, PartModel, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
-from fbdplc.graph import ScopeContext, VariableResolver, merge_nets
+from fbdplc.graph import MemoryProxy, ScopeContext, VariableResolver, merge_nets
 from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
-
-
-class GlobalMemory:
-    def __init__(self, ctx: z3.Context):
-        self.ctx = ctx
-        self.ssa = VariableResolver()
-        self.variables = {}
-        self.sorts = {}
-
-    def _make(self, ir, sort: type):
-        self.sorts[ir] = sort
-        if sort == Boolean:
-            self.variables[ir] = z3.Bool(ir, ctx=self.ctx)
-        elif sort == Integer:
-            self.variables[ir] = sort.make(ir, self.ctx)
-        else:
-            raise NotImplementedError(
-                f'Cannot create variable {ir} of sort {sort}')
-
-    def alloc(self, name: str, sort: type):
-        # assert name not in self.ssa.list_variables()
-        print(f'Allocating {name} of sort {sort} to global mem')
-        ir = self.ssa.read(name)
-        if ir in self.ssa.list_variables():
-            print('...Already exists')
-            return
-        self._make(ir, sort)
-
-    def read(self, name: str, idx=None):
-        assert name in self.ssa.list_variables()
-        return self.variables[self.ssa.read(name, idx=idx)]
-
-    def write(self, name: str):
-        assert name in self.ssa.list_variables()
-        ir = self.ssa.write(name)
-        sort = self.sorts[self.ssa.read(name, 0)]
-        self._make(ir, sort)
-        return self.variables[ir]
-
-    def list_variables(self):
-        return self.ssa.list_variables()
 
 
 class ProgramModel:
@@ -58,7 +17,7 @@ class ProgramModel:
         # We need some kind of static call graph for users to write assertions against
         # or we need to accumulate annotations from the code itself.
         self.root: Scope = None
-        self.global_mem = GlobalMemory(self.ctx)
+        self.global_mem = MemoryProxy('', self.ctx)
 
 
 class MemoryAccessProxy:
@@ -106,7 +65,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
             # TODO(Jmeyer): Only supports bools?
             isbool = not access.symbol.endswith('case')
-            program_model.global_mem.alloc(
+            program_model.global_mem.create(
                 access.symbol, Integer if not isbool else Boolean)
 
     # Build a dictionary of instantiated parts
