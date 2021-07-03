@@ -111,6 +111,9 @@ class Scope:
         self.mem = MemoryProxy(self.ns, ctx)
         self._make_variables(ctx)
 
+    def list_variables(self):
+        return self.mem.list_variables()
+
     def _make_variables(self, ctx: z3.Context):
         for name, vtype in self.variable_iface.all_variables():
             self.mem.create(name, vtype)

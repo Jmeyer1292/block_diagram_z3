@@ -1,4 +1,3 @@
-
 from fbdplc.sorts import Boolean
 from fbdplc.functions import Block, Program
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
@@ -43,100 +42,162 @@ def test_or_assertions():
     run_assertions(model, [], [a_or_b == True])
 
 
-# def test_set():
-#     net = parse_from_file('testdata/simple_set.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     assert(len(ssa.list_variables()) == 2)
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.reset': True, 'fault_clear': False},
-#                      {'fault_clear': True})
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.reset': False, 'fault_clear': False},
-#                      {'fault_clear': False})
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.reset': False, 'fault_clear': True},
-#                      {'fault_clear': True})
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.reset': True, 'fault_clear': True},
-#                      {'fault_clear': True})
+def test_set():
+    program = Program('test_set')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file('testdata/simple_set.xml')[0])
+    main_block.variables.temp.append(('fault_clear', Boolean))
+
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model,
+                     {'ToSafety.reset': True, 'fault_clear': False},
+                     {'fault_clear': True})
+    exec_and_compare(model,
+                     {'ToSafety.reset': False, 'fault_clear': False},
+                     {'fault_clear': False})
+    exec_and_compare(model,
+                     {'ToSafety.reset': False, 'fault_clear': True},
+                     {'fault_clear': True})
+    exec_and_compare(model,
+                     {'ToSafety.reset': True, 'fault_clear': True},
+                     {'fault_clear': True})
 
 
-# def test_pbox():
-#     net = parse_from_file('testdata/simple_pbox.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     assert(len(ssa.list_variables()) == 3)
-#     exec_and_compare(program, ssa,
-#                      {'a_or_b': True, 'p_trig_state': False},
-#                      {'rising_a_or_b': True})
-#     exec_and_compare(program, ssa,
-#                      {'a_or_b': False, 'p_trig_state': False},
-#                      {'rising_a_or_b': False})
-#     exec_and_compare(program, ssa,
-#                      {'a_or_b': True, 'p_trig_state': True},
-#                      {'rising_a_or_b': False})
+def test_pbox():
+    program = Program('test_pbox')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file('testdata/simple_pbox.xml')[0])
+    main_block.variables.temp.extend([
+        ('a_or_b', Boolean),
+        ('p_trig_state', Boolean),
+        ('rising_a_or_b', Boolean)])
+
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model,
+                     {'a_or_b': True, 'p_trig_state': False},
+                     {'rising_a_or_b': True})
+    exec_and_compare(model,
+                     {'a_or_b': False, 'p_trig_state': False},
+                     {'rising_a_or_b': False})
+    exec_and_compare(model,
+                     {'a_or_b': True, 'p_trig_state': True},
+                     {'rising_a_or_b': False})
 
 
-# def test_threeway():
-#     net = parse_from_file('testdata/threeway.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     assert(len(ssa.list_variables()) == 4)
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.a': True, 'ToSafety.b': True, 'fault_clear': True},
-#                      {'a_and_b': True, 'fault_clear': False})
-#     exec_and_compare(program, ssa,
-#                      {'ToSafety.a': True, 'ToSafety.b': False, 'fault_clear': True},
-#                      {'a_and_b': False, 'fault_clear': True})
+def test_threeway():
+    program = Program('test_threeway')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file('testdata/threeway.xml')[0])
+    main_block.variables.temp.extend([
+        ('a_and_b', Boolean),
+        ('fault_clear', Boolean), ])
+
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model,
+                     {'ToSafety.a': True, 'ToSafety.b': True, 'fault_clear': True},
+                     {'a_and_b': True, 'fault_clear': False})
+    exec_and_compare(model,
+                     {'ToSafety.a': True, 'ToSafety.b': False, 'fault_clear': True},
+                     {'a_and_b': False, 'fault_clear': True})
 
 
-# def test_negate():
-#     net = parse_from_file('testdata/negate.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     assert(len(ssa.list_variables()) == 2)
-#     exec_and_compare(program, ssa, {'fault_clear': True}, {
-#                      'FromSafety.stop': False})
-#     exec_and_compare(program, ssa, {'fault_clear': False}, {
-#                      'FromSafety.stop': True})
+def test_negate():
+    program = Program('test_negate')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file('testdata/negate.xml')[0])
+    main_block.variables.temp.extend([
+        ('fault_clear', Boolean), ])
+
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model, {'fault_clear': True}, {
+                     'FromSafety.stop': False})
+    exec_and_compare(model, {'fault_clear': False}, {
+                     'FromSafety.stop': True})
 
 
-# def test_two_assignments():
-#     ''' Psuedo code:
-#     t0 = a
-#     t0 = !a
-#     '''
-#     net = parse_from_file('testdata/two_assignments.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     assert(len(ssa.list_variables()) == 2)
-#     exec_and_compare(program, ssa, {'a': True}, {'t0': False})
-#     exec_and_compare(program, ssa, {'a': False}, {'t0': True})
+def test_two_assignments():
+    ''' Psuedo code:
+    t0 = a
+    t0 = !a
+    '''
+    program = Program('two_assignments')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.append(parse_from_file(
+        'testdata/two_assignments.xml')[0])
+    main_block.variables.temp.extend([
+        ('a', Boolean), ('t0', Boolean), ])
+
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model, {'a': True}, {'t0': False})
+    exec_and_compare(model, {'a': False}, {'t0': True})
 
 
-# def test_two_nets():
-#     '''
-#     The idea of this test is two test the combining of two nets in sequence:
-#     '''
-#     nets = parse_from_file('testdata/two_nets.xml')
-#     assert(len(nets) == 2)
+def test_two_nets():
+    '''
+    The idea of this test is two test the combining of two nets in sequence:
+    '''
+    program = Program('two_nets')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.extend(parse_from_file('testdata/two_nets.xml'))
+    main_block.variables.temp.extend([
+        ('a', Boolean), ('t0', Boolean), ('out0', Boolean)])
 
-#     merged = merge_scopes(nets[0], nets[1])
-#     program, ssa = modeling.program_model(merged)
-#     assert(len(ssa.list_variables()) == 3)
-#     exec_and_compare(program, ssa, {'a': True, 'out0': False}, {
-#                      't0': False, 'out0': False})
-#     exec_and_compare(program, ssa, {'a': False, 'out0': False}, {
-#                      't0': True, 'out0': True})
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model, {'a': True, 'out0': False}, {
+                     't0': False, 'out0': False})
+    exec_and_compare(model, {'a': False, 'out0': False}, {
+                     't0': True, 'out0': True})
 
 
-# def test_constants():
-#     ''' Psuedo code:
-#     ton = False || ALWAYS_FALSE
+# TODO(Jmeyer): After the latest refactor, this function is failing.
+def __test_constants():
+    ''' Psuedo code:
+    ton = False || ALWAYS_FALSE
 
-#     where ALWAYS_FALSE is a constant...
-#     '''
-#     net = parse_from_file('testdata/constants.xml')[0]
-#     program, ssa = modeling.program_model(net)
-#     assert(len(ssa.list_variables()) == 2)
-#     exec_and_compare(program, ssa, {'ALWAYS_FALSE': True}, {'ton': True})
-#     exec_and_compare(program, ssa, {'ALWAYS_FALSE': False}, {'ton': False})
+    where ALWAYS_FALSE is a constant...
+    '''
+    program = Program('two_nets')
+    # The following code builds a full program context around a snippet of XML and
+    # is the "old" way of doing things. I should regen all of these tests in their
+    # own complete program.
+    main_block = Block('main')
+    main_block.networks.extend(parse_from_file('testdata/constants.xml'))
+    main_block.variables.temp.extend([('ton', Boolean), ])
+    program.blocks[main_block.name] = main_block
+    model = modeling.program_model(program)
+
+    exec_and_compare(model, {'ALWAYS_FALSE': True}, {'ton': True})
+    exec_and_compare(model, {'ALWAYS_FALSE': False}, {'ton': False})
 
 
 def test_fc_call():

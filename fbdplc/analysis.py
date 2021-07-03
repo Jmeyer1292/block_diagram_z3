@@ -30,7 +30,9 @@ def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solve
 
 def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outputs):
     _, model = symbolic_execution(program_model, inputs)
+
     mem = _memory_dict(model, program_model.root)
+    mem.update(_memory_dict(model, program_model.global_mem))
 
     for o in expected_outputs:
         if not (mem[o] == expected_outputs[o]):
@@ -39,9 +41,9 @@ def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outp
             raise AssertionError(msg)
 
 
-def _memory_dict(model: z3.ModelRef, scope: Scope):
+def _memory_dict(model: z3.ModelRef, scope):
     mem = {}
-    for k in scope.mem.list_variables():
+    for k in scope.list_variables():
         v = scope.read(k)
         b: bool = model.eval(v)
         mem[k] = b
@@ -75,6 +77,7 @@ def run_assertions(program_model: modeling.ProgramModel,
             print(f'  Assertion {a} ==> {r}')
 
         return (False, model)
+
 
 def run_covers(program_model: modeling.ProgramModel,
                assumptions: List[ExprRef],

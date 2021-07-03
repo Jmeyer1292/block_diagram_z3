@@ -24,7 +24,8 @@ class GlobalMemory:
         elif sort == Integer:
             self.variables[ir] = sort.make(ir, self.ctx)
         else:
-            raise NotImplementedError(f'Cannot create variable {ir} of sort {sort}')
+            raise NotImplementedError(
+                f'Cannot create variable {ir} of sort {sort}')
 
     def alloc(self, name: str, sort: type):
         # assert name not in self.ssa.list_variables()
@@ -45,6 +46,9 @@ class GlobalMemory:
         sort = self.sorts[self.ssa.read(name, 0)]
         self._make(ir, sort)
         return self.variables[ir]
+
+    def list_variables(self):
+        return self.ssa.list_variables()
 
 
 class ProgramModel:
@@ -81,7 +85,7 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
         if type(wire.b) == NamedConnection and wire.b.target_uid == uid:
             print('Wire a may have type hint:')
             print(wire.a)
-    
+
     return result
 
 
@@ -102,7 +106,8 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
             # TODO(Jmeyer): Only supports bools?
             isbool = not access.symbol.endswith('case')
-            program_model.global_mem.alloc(access.symbol, Integer if not isbool else Boolean)
+            program_model.global_mem.alloc(
+                access.symbol, Integer if not isbool else Boolean)
 
     # Build a dictionary of instantiated parts
     callables = {}
@@ -114,7 +119,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             print('Is a move type')
             part_template.port_type = hunt_for_type(uid, code, call_stack[-1])
             assert part_template.port_type is not None
-        
+
         model: PartModel = part_template.instantiate(ns, program_model.ctx)
         callables[uid] = model
         program_model.assertions.extend(model.assertions)
