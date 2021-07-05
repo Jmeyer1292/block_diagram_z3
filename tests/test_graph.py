@@ -1,3 +1,4 @@
+from z3.z3 import BitVec, BitVecSort
 from fbdplc.sorts import Boolean, Integer, UDTSchema, make_schema
 from fbdplc.graph import MemoryProxy
 import z3
@@ -8,28 +9,32 @@ def test_mem():
     mem = MemoryProxy('', ctx)
     mem.create('foo', Boolean)
 
-    x = mem.read('foo')
-    print(x, x.sort())
+    assert 'foo' in mem.list_variables()
+    assert len(mem.list_variables()) == 1
+
+    ACCESS_COUNT_IDX = 0
 
     x1 = mem.write('foo')
-    print(x1, x1.sort())
+    assert len(mem.list_variables()) == 1
+    assert mem._sorts['foo'] == Boolean
+    assert mem.data['foo'][ACCESS_COUNT_IDX] == 1
 
     x2 = mem.write('foo')
-    print(x2, x2.sort())
+    assert mem.data['foo'][ACCESS_COUNT_IDX] == 2
+
 
 def test_mem_udt():
-    schema = make_schema('Point', {'x': Integer, 'y': Integer})
-    
+    # Interface goals:
+    # You should be able to create a UDT in memory and access it in a tree like fashion.
+    point_schema = make_schema('Point', {'x': Integer, 'y': Integer})
+
+    box_schema = make_schema('Box', {'min': point_schema, 'max': point_schema})
+
     ctx = z3.Context()
-    mem = MemoryProxy('SUPER_NESTED_CALL', ctx)
-    mem.create('p0', schema)
+    mem = MemoryProxy('', ctx)
 
-    print(mem.data)
-    print(mem._variables)
+    # Create a point in memory
+    mem.create2('foo.p0', point_schema)
+    mem.create2('mybox', box_schema)
 
-    proxy = mem.read('p0', 0, schema)
-    print(proxy, proxy.fields)
-    
-    proxy1 = mem.write('p0', schema)
-    print(proxy1, proxy1.fields)
-    
+    x = mem.read('mybox')

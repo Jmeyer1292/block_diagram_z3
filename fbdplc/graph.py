@@ -1,7 +1,7 @@
 from enum import unique
 
 from fbdplc.utils import namespace
-from fbdplc.sorts import SORT_MAP, UDTInstance, UDTSchema, g_udt_archive, in_archive
+from fbdplc.sorts import SORT_MAP, UDTInstance, UDTSchema, children, g_udt_archive, in_archive, is_primitive
 import functools
 from typing import List
 
@@ -55,6 +55,9 @@ class MemoryProxy:
     def __init__(self, ns, ctx):
         self.ns = ns
         self.ctx = ctx
+        self.tree = {}
+        self.leaves = {}
+
         # Maps name: str -> Tuple[access_count: int, sort: Type]
         self.data = {}
         # Maps unique_name: str -> Instance
@@ -98,6 +101,45 @@ class MemoryProxy:
                 self.__create(name + '.' + n, v, unique)
         else:
             self.__create(name, sort, unique)
+
+    def _make_variables(self, name: str, sort):
+        # Now we've got a variable of 'name' and 'sort', we need to create its children:
+        # Create the root of the new type and everything under it:
+        self.tree[name] = sort
+        if is_primitive(sort):
+            print('Creating primitive', name, sort)
+            self.__create(name, sort)
+        else:
+            print('Iterating down over children', name, sort)
+            for child_name, child_sort in children(sort):
+                self._make_variables(name + '.' + child_name, child_sort)
+
+    def create2(self, name: str, sort):
+        # Mem is kept as a tree
+        #
+        tree_levels = name.split('.')
+        print('Access levels:', tree_levels)
+
+        # Create any access levels above the variable being created
+        for i in range(len(tree_levels) - 1):
+            level = '.'.join(tree_levels[0: i + 1])
+            print('Considering access level:', level)
+
+            if level in self.data:
+                print(
+                    f'We already have {level} w/ at index = {i} and with sort {self.data[level][1]}')
+            else:
+                has_sort = i + 1 == len(tree_levels)
+                if has_sort:
+                    print(f'Creating new level {level} of known sort {sort}')
+                else:
+                    print(f'Creating new level {level} with UNKNOWN sort')
+
+                this_sort = sort if has_sort else None
+                self.tree[level] = this_sort
+
+        # Now we've got a variable of 'name' and 'sort', we need to create its children:
+        self._make_variables(name, sort)
 
     def __read(self, name: str, index=None, sort=None):
         assert name in self.data, f'{name} not in memory object'
