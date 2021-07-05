@@ -44,7 +44,7 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
                 access = code.accesses[wire.b.target_uid]
                 print(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
-                    sort = scope.mem._sorts[access.symbol]
+                    sort = scope.mem.sort(access.symbol)
                     print(f'\tSort determined to be {sort}')
                     return sort
         elif b_matches:
@@ -52,7 +52,7 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
                 access = code.accesses[wire.a.target_uid]
                 print(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
-                    sort = scope.mem._sorts[access.symbol]
+                    sort = scope.mem.sort(access.symbol)
                     print(f'\tSort determined to be {sort}')
                     return sort
 
