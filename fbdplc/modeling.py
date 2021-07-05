@@ -1,13 +1,12 @@
 from fbdplc.sorts import Boolean, Integer, UDTInstance
 from z3.z3types import Z3Exception
-from fbdplc.utils import namespace
-from fbdplc.functions import Block, Call, Program, Scope
-from typing import List, Union
+from fbdplc.functions import Block, Program, Scope
+from typing import List
 import z3
-from fbdplc.parts import CoilPart, MovePart, PartModel, PartPort, PortDirection
+from fbdplc.parts import MovePart, PartModel, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
-from fbdplc.graph import MemoryProxy, ScopeContext, VariableResolver, merge_nets
-from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
+from fbdplc.graph import MemoryProxy, ScopeContext, merge_nets
+from fbdplc.access import LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
 
 class ProgramModel:

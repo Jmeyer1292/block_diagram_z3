@@ -1,5 +1,3 @@
-from enum import unique
-
 from fbdplc.utils import namespace
 from fbdplc.sorts import SORT_MAP, UDTInstance, UDTSchema, children, g_udt_archive, in_archive, is_primitive
 import functools
@@ -13,42 +11,6 @@ class ScopeContext:
         self.parts = {}
         self.wires = {}
         self.calls = {}
-
-
-class VariableResolver:
-    def __init__(self):
-        self.data = {}
-
-    @staticmethod
-    def ir_name(name: str, access_no: int) -> str:
-        return f'{name}#{access_no}'
-
-    def list_variables(self):
-        return [k for k in self.data]
-
-    def write(self, name):
-        if name in self.data:
-            self.data[name] += 1
-            return self.ir_name(name, self.data[name])
-        else:
-            self.data[name] = 0
-            return self.ir_name(name, 0)
-
-    def read(self, name, idx=None):
-        if idx is not None:
-            assert name in self.data, f'"{name}" not in variable resolver directory. Has {self.list_variables()}'
-            return self.ir_name(name, idx)
-
-        data = self.data.get(name, None)
-        if data is None:
-            self.data[name] = 0
-            data = 0
-        return self.ir_name(name, data)
-
-    def create(self, name: str):
-        # Should this have sort too?
-        assert name not in self.data
-        self.data[name] = 0
 
 
 class MemoryProxy:
