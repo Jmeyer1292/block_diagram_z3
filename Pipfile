@@ -11,6 +11,7 @@ z3-solver = "*"
 lxml = "*"
 pytest = "*"
 autopep8 = "*"
+lark = "*"
 
 [requires]
 python_version = "3.9"
