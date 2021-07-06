@@ -148,14 +148,24 @@ class MemoryProxy:
         return self.__make_var(self.ir_name(name, entry[0]), sort)
 
     def write(self, name: str, sort=None):
-        if isinstance(sort, UDTSchema):
-            instance = UDTInstance(sort)
-            for n, v in sort.iterfields():
-                variable = self.__write(name + '.' + n, v)
+        tree_sort = self.tree[name]
+        if tree_sort is not None and sort is not None:
+            assert tree_sort == sort, f"Read types don't match {tree_sort} vs {sort}"
+
+        resolved_sort = None
+        if tree_sort is not None:
+            resolved_sort = tree_sort
+        elif sort is not None:
+            resolved_sort = sort
+
+        if is_primitive(resolved_sort):
+            return self.__write(name, sort=resolved_sort)
+        else:
+            instance = UDTInstance(resolved_sort)
+            for n, v in resolved_sort.iterfields():
+                variable = self.__write(name + '.' + n, sort=v)
                 instance.fields[n] = variable
             return instance
-        else:
-            return self.__write(name, sort)
 
 
 def merge_scopes(a: ScopeContext, b: ScopeContext) -> ScopeContext:

@@ -62,3 +62,6 @@ def test_udt_reading():
     assert p0_x is p0.fields['x']
     p0_y = mem.read('p0.y')
     assert p0_y is p0.fields['y']
+
+    p0_x_1 = mem.write('p0')
+    print(p0_x_1.fields)
