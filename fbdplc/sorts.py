@@ -93,8 +93,12 @@ def make_schema(name, parsed_schema):
     schema = UDTSchema(name)
     for key, value in parsed_schema.items():
         schema.fields[key] = value
-    g_udt_archive[name] = schema
+    register_udt(name, schema)
     return schema
+
+
+def register_udt(name, schema):
+    g_udt_archive[name] = schema
 
 
 SORT_LIKE = typing.Union[UDTSchema, Integer, Boolean, Time]
