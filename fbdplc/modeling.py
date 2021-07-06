@@ -72,12 +72,12 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     code = merge_nets(block.networks)
 
     for uid, access in code.accesses.items():
-        print(f'Processing access {access}')
         if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
+            print(f'Processing access {access}')
             # TODO(Jmeyer): Only supports bools?
-            isbool = not access.symbol.endswith('case')
-            program_model.global_mem.create(
-                access.symbol, Integer if not isbool else Boolean, unique=False)
+            # isbool = not access.symbol.endswith('case')
+            # program_model.global_mem.create(
+                # access.symbol, Integer if not isbool else Boolean, unique=False)
 
     # Build a dictionary of instantiated parts
     callables = {}
@@ -244,12 +244,15 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     print('Done w/ Block')
 
 
-def program_model(program: Program, context=None):
+def program_model(program: Program, context=None, global_memory=None):
     assert isinstance(program, Program)
     # Need to load the "main" entry point and start symbolically translating the program.
     main = program.blocks[program.entry]
 
     program_model = ProgramModel(ctx=context)
+    if global_memory:
+        program_model.global_mem = global_memory
+
     call_stack = [Scope('', '', program_model.ctx, main)]
     program_model.root = call_stack[0]
     _model_block(program, program_model, main, call_stack)

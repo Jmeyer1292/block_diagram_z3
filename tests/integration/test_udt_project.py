@@ -1,3 +1,6 @@
+from fbdplc.modeling import program_model
+from fbdplc.apps import parse_s7xml
+from fbdplc.functions import Program
 from z3 import z3
 from fbdplc.graph import MemoryProxy
 from fbdplc import sorts
@@ -72,6 +75,13 @@ def build_program_model(udt_files, db_files, xml_files):
     dbs = _process_dbs(db_files, ctx)
     pprint.pprint(dbs._variables)
     # Then build the actual program logic
+    program = Program('udt_project')
+    for f in xml_files:
+        block = parse_s7xml.parse_function_from_file(f)
+        program.blocks[block.name] = block
+    program.entry = 'Main_Safety_RTG1'
+
+    model = program_model(program, context=ctx, global_memory=dbs)
 
 
 def main():
