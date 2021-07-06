@@ -113,3 +113,11 @@ def children(sort: SORT_LIKE):
         return [(x, sort.fields[x]) for x in sort.fields]
     else:
         return []
+
+
+def get_sort_factory(name):
+    if name in SORT_MAP:
+        return SORT_MAP[name]
+    if name in g_udt_archive:
+        return g_udt_archive[name]
+    raise RuntimeError(f'Sort {name} not known')

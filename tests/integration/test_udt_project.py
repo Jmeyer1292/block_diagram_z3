@@ -1,7 +1,10 @@
+from z3 import z3
+from fbdplc.graph import MemoryProxy
 from fbdplc import sorts
-from fbdplc.sorts import UDTSchema, is_primitive, register_udt
+from fbdplc.sorts import UDTSchema, get_sort_factory, is_primitive, register_udt
 from fbdplc import s7db
 import glob
+import pprint
 
 
 def _build_udt(outline, outlines):
@@ -27,6 +30,26 @@ def _build_udt(outline, outlines):
     return schema
 
 
+def _process_dbs(db_files, ctx):
+    # {'"Example1_DB"': {'initializers': {},
+    #                'name': '"Example1_DB"',
+    #                'symbols': {'box0': {'name': 'box0', 'type': '"Box"'},
+    #                            'box1': {'name': 'box1', 'type': '"Box"'}}},
+    mem = MemoryProxy('', ctx)
+    for p in db_files:
+        outline = s7db.parse_db_file(p)
+        root_name: str = outline['name']
+        if root_name[0] == '"':
+            root_name = root_name[1:-1]
+
+        for name, entry in outline['symbols'].items():
+            sort = get_sort_factory(entry['type'])
+            resolved_name = '.'.join([root_name, name])
+            mem.create(resolved_name, sort)
+
+    return mem
+
+
 def _build_udts(udt_files):
     outlines = {}
     for f in udt_files:
@@ -35,13 +58,9 @@ def _build_udts(udt_files):
 
     # Transform these outlines into UDTSchemas, make sure we have definitions for everything,
     # and register them.
-    print(outlines)
-
     for name, outline in outlines.items():
         print(f'Parsing {name}')
         _build_udt(outline, outlines)
-
-    print('UDT Archive\n:', sorts.g_udt_archive)
 
 
 def build_program_model(udt_files, db_files, xml_files):
@@ -49,7 +68,9 @@ def build_program_model(udt_files, db_files, xml_files):
     #   This step populates the g_udt_archive in the sorts module
     _build_udts(udt_files)
     # Then build the DBs up
-    
+    ctx = z3.Context()
+    dbs = _process_dbs(db_files, ctx)
+    pprint.pprint(dbs._variables)
     # Then build the actual program logic
 
 

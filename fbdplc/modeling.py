@@ -10,9 +10,9 @@ from fbdplc.access import LiteralConstantAccess, SymbolAccess, SymbolConstantAcc
 
 
 class ProgramModel:
-    def __init__(self):
+    def __init__(self, ctx=None):
         self.assertions = []
-        self.ctx = z3.Context()
+        self.ctx = ctx if ctx else z3.Context()
         # We need some kind of static call graph for users to write assertions against
         # or we need to accumulate annotations from the code itself.
         self.root: Scope = None
@@ -244,12 +244,12 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     print('Done w/ Block')
 
 
-def program_model(program: Program):
+def program_model(program: Program, context=None):
     assert isinstance(program, Program)
     # Need to load the "main" entry point and start symbolically translating the program.
     main = program.blocks[program.entry]
 
-    program_model = ProgramModel()
+    program_model = ProgramModel(ctx=context)
     call_stack = [Scope('', '', program_model.ctx, main)]
     program_model.root = call_stack[0]
     _model_block(program, program_model, main, call_stack)
