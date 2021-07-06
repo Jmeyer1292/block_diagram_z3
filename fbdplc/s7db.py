@@ -48,6 +48,48 @@ DB_GRAMMAR = '''
     %ignore WS
 '''
 
+UDT_GRAMMAR = '''
+
+    start: type_block
+
+    type_block: "TYPE" ESCAPED_STRING property? section+ "END_TYPE" 
+
+    property: "{" assignment+ "}"
+
+    ?section: struct_block
+        |    init_block
+        |    version
+    
+    version: "VERSION :" NUMBER
+
+    struct_block: "STRUCT" var_decl* "END_STRUCT;"
+
+    var_decl: NAME property? ":" TYPE ";"
+
+    TYPE: NAME
+        | ESCAPED_STRING
+
+    init_block: "BEGIN" assignment*
+
+    assignment: ASSIGNMENT_NAME ":=" literal ";"?
+
+    SINGLE_QUOTE_STR: "\'" NAME "\'"
+
+    literal: ESCAPED_STRING
+           | NUMBER
+           | SINGLE_QUOTE_STR
+
+    ASSIGNMENT_NAME: ("_"|LETTER) ("."|"_"|LETTER|DIGIT)*
+
+    %import common.ESCAPED_STRING
+    %import common.CNAME -> NAME
+    %import common.LETTER
+    %import common.DIGIT
+    %import common.NUMBER
+    %import common.WS
+    %ignore WS
+'''
+
 db_parser = lark.Lark(DB_GRAMMAR)
 
 
@@ -111,4 +153,8 @@ def parse_db_file(path: str) -> Dict:
 
 
 def parse_udt_file(path: str):
-    raise NotImplementedError("UDT files not yet implemented")
+    text = ''
+    with open(path, 'r', encoding='utf-8-sig') as fh:
+        text = fh.read()
+    tree = udt_parser.parse(text)
+    return _walk_udt(tree)
