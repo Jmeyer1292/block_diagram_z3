@@ -1,0 +1,15 @@
+﻿DATA_BLOCK "FromSafety"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      state { S7_SetPoint := 'False'} : "MachineState";
+      sensor_a_state : "SensorState";
+      sensor_b_state : "SensorState";
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+

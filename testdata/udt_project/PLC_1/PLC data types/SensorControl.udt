@@ -1,0 +1,8 @@
+﻿TYPE "SensorControl"
+VERSION : 0.1
+   STRUCT
+      request_mode : Int;
+   END_STRUCT;
+
+END_TYPE
+

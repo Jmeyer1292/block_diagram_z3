@@ -1,0 +1,9 @@
+﻿TYPE "SensorState"
+VERSION : 0.1
+   STRUCT
+      mode : Int;
+      ready : Bool;
+   END_STRUCT;
+
+END_TYPE
+

@@ -1,0 +1,15 @@
+﻿DATA_BLOCK "ToSafety"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      app { S7_SetPoint := 'False'} : "AppControl";
+      sensor_ctrl_a : "SensorControl";
+      sensor_ctrl_b : "SensorControl";
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+

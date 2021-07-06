@@ -1,0 +1,15 @@
+﻿DATA_BLOCK "Example2_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      reference { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "Point";
+   END_VAR
+
+
+BEGIN
+   reference.x := 0;
+   reference.y := 1;
+
+END_DATA_BLOCK
+

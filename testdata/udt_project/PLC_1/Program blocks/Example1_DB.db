@@ -1,0 +1,14 @@
+﻿DATA_BLOCK "Example1_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      box0 { S7_SetPoint := 'False'} : "Box";
+      box1 : "Box";
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+
