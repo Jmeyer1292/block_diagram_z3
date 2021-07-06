@@ -1,6 +1,7 @@
+from typing import Dict
 import lark
 
-db_grammar = '''
+DB_GRAMMAR = '''
 
     start: data_block
 
@@ -40,9 +41,10 @@ db_grammar = '''
     %ignore WS
 '''
 
-parser = lark.Lark(db_grammar)
+db_parser = lark.Lark(DB_GRAMMAR)
 
-def parse_decl(decl: lark.Tree):
+
+def _parse_decl(decl: lark.Tree):
     assert decl.data == 'var_decl'
     # print(decl)
     entry = {'name': None, 'type': None}
@@ -51,7 +53,8 @@ def parse_decl(decl: lark.Tree):
             entry[child.type.lower()] = child.value
     return entry
 
-def walk(tree: lark.Tree):
+
+def _walk(tree: lark.Tree):
     assert len(tree.children) == 1
     block_root = tree.children[0]
     assert block_root.data == "data_block"
@@ -63,23 +66,39 @@ def walk(tree: lark.Tree):
 
     for vars in tree.find_data('var_block'):
         for decl in vars.children:
-            x = parse_decl(decl)
+            x = _parse_decl(decl)
             variables[x['name']] = x
-    
+
     for inits in tree.find_data('init_block'):
         for assignment in inits.children:
             name = assignment.children[0].value
             value = assignment.children[1].children[0].value
-            print(f'{name} == {value}')
-            variables.get(name)['init'] = value 
+            variables.get(name)['init'] = value
 
-    print(variables)
-    return variables
+    return {
+        'name': block_name,
+        'symbols': variables
+    }
 
-with open('testdata/test_data.db', 'r') as fh:
-    txt = fh.read()
-    tree = parser.parse(txt)
-    print(tree.pretty())
 
-    walk(tree)
-        
+def parse_db_file(path: str) -> Dict:
+    '''
+    Returns a dictionary with the following fields:
+        'name' : The name of this DB
+        'symbols': A dictionary of name -> Symbol Entry
+
+    Each Symbol Entry is itself a dict:
+        'name' : The symbol name
+        'type': The type or "sort" of the symbol
+        OPTIONAL 'init': The initial value of the symbol
+    '''
+    text = ''
+    with open(path, 'r') as fh:
+        text = fh.read()
+    tree = db_parser.parse(text)
+    symbols = _walk(tree)
+    return symbols
+
+
+def parse_udt_file(path: str):
+    raise NotImplementedError("UDT files not yet implemented")
