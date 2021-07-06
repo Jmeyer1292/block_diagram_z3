@@ -16,5 +16,5 @@ def test_example0():
         assert 'name' in symbols[s]
         assert 'type' in symbols[s]
 
-    assert 'source' in symbols
-    assert symbols['source']['init'] == '1'
+    assert 'source' in parsed['initializers']
+    assert parsed['initializers']['source'] == '1'

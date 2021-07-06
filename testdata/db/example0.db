@@ -1,6 +1,6 @@
 DATA_BLOCK "DebugData"
 { S7_Optimized_Access := "TRUE" }
-VERSION: 0.1
+VERSION : 0.1
 NON_RETAIN
     VAR
         source { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
