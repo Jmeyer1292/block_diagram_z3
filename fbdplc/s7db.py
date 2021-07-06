@@ -91,6 +91,7 @@ UDT_GRAMMAR = '''
 '''
 
 db_parser = lark.Lark(DB_GRAMMAR)
+udt_parser = lark.Lark(UDT_GRAMMAR)
 
 
 def _parse_decl(decl: lark.Tree):
@@ -103,7 +104,7 @@ def _parse_decl(decl: lark.Tree):
     return entry
 
 
-def _walk(tree: lark.Tree):
+def _walk_db(tree: lark.Tree):
     assert len(tree.children) == 1
     block_root = tree.children[0]
     assert block_root.data == "data_block"
@@ -132,6 +133,43 @@ def _walk(tree: lark.Tree):
     }
 
 
+def _walk_udt(tree: lark.Tree):
+    assert len(tree.children) == 1
+    block_root = tree.children[0]
+    assert block_root.data == "type_block"
+
+    # first child is the name
+    block_name = block_root.children[0].value
+
+    variables = {}
+
+    for vars in tree.find_data('struct_block'):
+        for decl in vars.children:
+            x = _parse_decl(decl)
+            variables[x['name']] = x
+
+    initializers = {}
+    for inits in tree.find_data('init_block'):
+        for assignment in inits.children:
+            name = assignment.children[0].value
+            value = assignment.children[1].children[0].value
+            initializers[name] = value
+
+    return {
+        'name': block_name,
+        'symbols': variables,
+        'initializers': initializers
+    }
+
+
+def _parse_file(path: str, parser: lark.Lark, transformer):
+    text = ''
+
+    with open(path, 'r', encoding='utf-8-sig') as fh:
+        text = fh.read()
+    return transformer(parser.parse(text))
+
+
 def parse_db_file(path: str) -> Dict:
     '''
     Returns a dictionary with the following fields:
@@ -143,18 +181,11 @@ def parse_db_file(path: str) -> Dict:
         'name' : The symbol name
         'type': The type or "sort" of the symbol
     '''
-    text = ''
-
-    with open(path, 'r', encoding='utf-8-sig') as fh:
-        text = fh.read()
-    tree = db_parser.parse(text)
-    symbols = _walk(tree)
-    return symbols
+    return _parse_file(path, db_parser, _walk_db)
 
 
 def parse_udt_file(path: str):
-    text = ''
-    with open(path, 'r', encoding='utf-8-sig') as fh:
-        text = fh.read()
-    tree = udt_parser.parse(text)
-    return _walk_udt(tree)
+    '''
+    See ~parse_db_file() documentation; Called on a user-defined-datatype, or UDT.
+    '''
+    return _parse_file(path, udt_parser, _walk_udt)
