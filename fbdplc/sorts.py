@@ -1,3 +1,4 @@
+import typing
 import z3
 
 
@@ -18,8 +19,10 @@ class Time:
     def make(name: str, ctx: z3.Context):
         return z3.Int(name, ctx=ctx)
 
+
 class AnyType:
     pass
+
 
 # Primitives
 SORT_MAP = {
@@ -36,15 +39,15 @@ class UDTSchema:
 
     def __str__(self):
         return f'UDTSchema({self.name})'
-    
+
     def make(self, name: str, ctx: z3.Context):
         instance = UDTInstance(self)
         for key, value in self.fields.items():
             n = name + '.' + key
             instance.fields[key] = value.make(n, ctx=ctx)
         return instance
-    
-    def iterfields(self, prefix = ''):
+
+    def iterfields(self, prefix=''):
         for n, v in self.fields.items():
             if isinstance(v, UDTSchema):
                 for _x in v.iterfields(n + '.'):
@@ -65,13 +68,13 @@ class UDTInstance:
         if self.schema.name != other.schema.name:
             raise RuntimeError(
                 f'Can not equate UDTs of different schema {self.schema} vs {other.schema}')
-        
+
         exprs = []
         for name, value in self.fields.items():
             other_value = other.fields[name]
             exprs.append(value == other_value)
         return z3.And(exprs)
-    
+
     def field(self, name: str):
         return self.fields[name]
 
@@ -85,9 +88,24 @@ def in_archive(sort):
     else:
         return sort.name in g_udt_archive
 
+
 def make_schema(name, parsed_schema):
     schema = UDTSchema(name)
     for key, value in parsed_schema.items():
         schema.fields[key] = value
     g_udt_archive[name] = schema
     return schema
+
+
+SORT_LIKE = typing.Union[UDTSchema, Integer, Boolean, Time]
+
+
+def is_primitive(sort: SORT_LIKE):
+    return sort in SORT_MAP.values()
+
+
+def children(sort: SORT_LIKE):
+    if isinstance(sort, UDTSchema):
+        return [(x, sort.fields[x]) for x in sort.fields]
+    else:
+        return []

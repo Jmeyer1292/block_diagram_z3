@@ -1,13 +1,12 @@
 from fbdplc.sorts import Boolean, Integer, UDTInstance
 from z3.z3types import Z3Exception
-from fbdplc.utils import namespace
-from fbdplc.functions import Block, Call, Program, Scope
-from typing import List, Union
+from fbdplc.functions import Block, Program, Scope
+from typing import List
 import z3
-from fbdplc.parts import CoilPart, MovePart, PartModel, PartPort, PortDirection
+from fbdplc.parts import MovePart, PartModel, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
-from fbdplc.graph import MemoryProxy, ScopeContext, VariableResolver, merge_nets
-from fbdplc.access import Access, LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
+from fbdplc.graph import MemoryProxy, ScopeContext, merge_nets
+from fbdplc.access import LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
 
 
 class ProgramModel:
@@ -44,7 +43,7 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
                 access = code.accesses[wire.b.target_uid]
                 print(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
-                    sort = scope.mem._sorts[access.symbol]
+                    sort = scope.mem.sort(access.symbol)
                     print(f'\tSort determined to be {sort}')
                     return sort
         elif b_matches:
@@ -52,7 +51,7 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
                 access = code.accesses[wire.a.target_uid]
                 print(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
-                    sort = scope.mem._sorts[access.symbol]
+                    sort = scope.mem.sort(access.symbol)
                     print(f'\tSort determined to be {sort}')
                     return sort
 

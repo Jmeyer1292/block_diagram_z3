@@ -1,8 +1,6 @@
-from fbdplc.sorts import Boolean, Integer, Time, UDTSchema
-from fbdplc.utils import namespace
 from fbdplc.parts import PartModel, PartPort, PartTemplate, PortDirection
 from typing import Dict
-from fbdplc.graph import MemoryProxy, ScopeContext, VariableResolver
+from fbdplc.graph import MemoryProxy
 import enum
 import z3
 
