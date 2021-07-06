@@ -13,7 +13,7 @@ DB_GRAMMAR = '''
         |    init_block
         |    version
     
-    version: "VERSION:" NUMBER
+    version: "VERSION :" NUMBER
 
     var_block: "NON_RETAIN" "VAR" var_decl* "END_VAR"
 
@@ -93,7 +93,8 @@ def parse_db_file(path: str) -> Dict:
         OPTIONAL 'init': The initial value of the symbol
     '''
     text = ''
-    with open(path, 'r') as fh:
+    
+    with open(path, 'r', encoding='utf-8-sig') as fh:
         text = fh.read()
     tree = db_parser.parse(text)
     symbols = _walk(tree)
