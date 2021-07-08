@@ -1,3 +1,5 @@
+import z3
+from fbdplc.graph import MemoryProxy
 from fbdplc.sorts import Boolean
 from fbdplc.functions import Block, Program
 from fbdplc.s7xml import parse_from_file, parse_function_from_file
@@ -21,7 +23,11 @@ def test_or():
     program.blocks[main_block.name] = main_block
     program.entry = main_block.name
 
-    model = modeling.program_model(program)
+    mem = MemoryProxy('', z3.Context())
+    mem.create('ToSafety.a', Boolean)
+    mem.create('ToSafety.b', Boolean)
+
+    model = modeling.program_model(program, mem.ctx, mem)
     exec_and_compare(model, {'ToSafety.a': True,
                      'ToSafety.b': True}, {'a_or_b': True})
 
@@ -36,7 +42,11 @@ def test_or_assertions():
     program.blocks[main_block.name] = main_block
     program.entry = main_block.name
 
-    model = modeling.program_model(program)
+    mem = MemoryProxy('', z3.Context())
+    mem.create('ToSafety.a', Boolean)
+    mem.create('ToSafety.b', Boolean)
+
+    model = modeling.program_model(program, mem.ctx, mem)
     assertions = []
     a_or_b = model.root.read('a_or_b')
     run_assertions(model, [], [a_or_b == True])
@@ -51,8 +61,11 @@ def test_set():
     main_block.networks.append(parse_from_file('testdata/simple_set.xml')[0])
     main_block.variables.temp.append(('fault_clear', Boolean))
 
+    mem = MemoryProxy('', z3.Context())
+    mem.create('ToSafety.reset', Boolean)
+
     program.blocks[main_block.name] = main_block
-    model = modeling.program_model(program)
+    model = modeling.program_model(program, mem.ctx, mem)
 
     exec_and_compare(model,
                      {'ToSafety.reset': True, 'fault_clear': False},
@@ -105,8 +118,11 @@ def test_threeway():
         ('a_and_b', Boolean),
         ('fault_clear', Boolean), ])
 
+    mem = MemoryProxy('', z3.Context())
+    mem.create('ToSafety.a', Boolean)
+    mem.create('ToSafety.b', Boolean)
     program.blocks[main_block.name] = main_block
-    model = modeling.program_model(program)
+    model = modeling.program_model(program, mem.ctx, mem)
 
     exec_and_compare(model,
                      {'ToSafety.a': True, 'ToSafety.b': True, 'fault_clear': True},
@@ -126,8 +142,11 @@ def test_negate():
     main_block.variables.temp.extend([
         ('fault_clear', Boolean), ])
 
+    mem = MemoryProxy('', z3.Context())
+    mem.create('FromSafety.stop', Boolean)
+
     program.blocks[main_block.name] = main_block
-    model = modeling.program_model(program)
+    model = modeling.program_model(program, mem.ctx, mem)
 
     exec_and_compare(model, {'fault_clear': True}, {
                      'FromSafety.stop': False})
