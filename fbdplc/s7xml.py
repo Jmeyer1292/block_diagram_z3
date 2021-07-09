@@ -94,7 +94,7 @@ def parse_block(tree: etree._ElementTree) -> Block:
     assert(root.tag == 'Document')
     BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
     block_node = [b for b in root if b.tag in BLOCK_TAGS]
-    assert(len(block_node) == 1)
+    assert len(block_node) == 1, f'Tree {tree} has {len(block_node)} != 1'
     return parse_function_block(block_node[0])
 
 
