@@ -1,7 +1,7 @@
 from typing import Dict
 import lark
 
-DB_GRAMMAR = '''
+DB_GRAMMAR = r'''
 
     start: data_block
 
@@ -17,7 +17,11 @@ DB_GRAMMAR = '''
 
     var_block: "NON_RETAIN" "VAR" var_decl* "END_VAR"
 
-    var_decl: NAME property? ":" TYPE ";"
+    var_decl: NAME property? ":" sort ";"
+
+    ?sort: TYPE | struct_def
+
+    struct_def: "Struct" var_decl* "END_STRUCT"
 
     TYPE: NAME
         | ESCAPED_STRING
@@ -28,16 +32,16 @@ DB_GRAMMAR = '''
 
     assignment: ASSIGNMENT_NAME ":=" literal ";"?
 
-    SINGLE_QUOTE_STR: "\'" NAME "\'"
+    SINGLE_QUOTE_STR: "'" NAME "'"
 
     literal: ESCAPED_STRING
            | NUMBER
            | SINGLE_QUOTE_STR
 
-
-
-
     ASSIGNMENT_NAME: ("_"|LETTER) ("."|"_"|LETTER|DIGIT)*
+
+    COMMENT: "//" /[^\n]*/ "\n"
+    %ignore COMMENT
 
     %import common.ESCAPED_STRING
     %import common.CNAME -> NAME
@@ -48,7 +52,7 @@ DB_GRAMMAR = '''
     %ignore WS
 '''
 
-UDT_GRAMMAR = '''
+UDT_GRAMMAR = r'''
 
     start: type_block
 
@@ -73,8 +77,10 @@ UDT_GRAMMAR = '''
 
     assignment: ASSIGNMENT_NAME ":=" literal ";"?
 
-    SINGLE_QUOTE_STR: "\'" NAME "\'"
-
+    SINGLE_QUOTE_STR: "'" NAME "'"
+    COMMENT: "//" /[^\n]*/ "\n"
+    %ignore COMMENT
+    
     literal: ESCAPED_STRING
            | NUMBER
            | SINGLE_QUOTE_STR
@@ -95,12 +101,24 @@ udt_parser = lark.Lark(UDT_GRAMMAR)
 
 
 def _parse_decl(decl: lark.Tree):
+    print(f'parse decl: {decl}')
     assert decl.data == 'var_decl'
     # print(decl)
     entry = {'name': None, 'type': None}
     for child in decl.children:
         if isinstance(child, lark.Token):
             entry[child.type.lower()] = child.value
+        elif isinstance(child, lark.Tree) and child.data == 'struct_def':
+            print('struct!')
+            struct = {}
+            for cc in child.children:
+                x = _parse_decl(cc)
+                struct[x['name']] = x
+            entry['type'] = struct
+
+    assert entry['name'] is not None
+    assert entry['type'] is not None
+
     return entry
 
 

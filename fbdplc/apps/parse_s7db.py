@@ -1,6 +1,6 @@
 import argparse
 import fbdplc.s7db
-
+import pprint
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -33,4 +33,4 @@ if __name__ == '__main__':
 
         parser = ACTIONS[action]
         result = parser(path)
-        print(result)
+        pprint.pprint(result)

@@ -90,6 +90,11 @@ def in_archive(sort):
 
 
 def make_schema(name, parsed_schema):
+    if name in g_udt_archive:
+        # TODO(Jmeyer): Cross check that the types are, in fact, the same
+        print(f'Schema {name} is already in archive')
+        return g_udt_archive[name]
+
     schema = UDTSchema(name)
     for key, value in parsed_schema.items():
         schema.fields[key] = value

@@ -1,3 +1,4 @@
+from fbdplc.analysis import exec_and_compare
 from fbdplc.modeling import program_model
 from fbdplc.apps import parse_s7xml
 from fbdplc.functions import Program
@@ -82,6 +83,13 @@ def build_program_model(udt_files, db_files, xml_files):
     program.entry = 'Main_Safety_RTG1'
 
     model = program_model(program, context=ctx, global_memory=dbs)
+    exec_and_compare(model,
+                     {'ToSafety.sensor_ctrl_a.request_mode': 2,
+                      'ToSafety.sensor_ctrl_b.request_mode': 1,
+                      'ToSafety.app.start':  True,
+                      'ToSafety.app.stop':  True,
+                      'faults_clear': True},
+                      {'FromSafety.state.running': False})
 
 
 def main():
