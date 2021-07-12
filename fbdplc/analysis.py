@@ -39,6 +39,7 @@ def exec_and_compare(program_model: modeling.ProgramModel, inputs, expected_outp
             msg = f'EXEC error: expected var {o} to be {expected_outputs[o]} but got {mem[o]}\n'
             msg += f'Context: {mem}\n{model}\nModel: {_}'
             raise AssertionError(msg)
+    return model
 
 
 def _memory_dict(model: z3.ModelRef, scope):

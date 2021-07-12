@@ -125,4 +125,4 @@ def get_sort_factory(name):
         return SORT_MAP[name]
     if name in g_udt_archive:
         return g_udt_archive[name]
-    raise RuntimeError(f'Sort {name} not known')
+    raise RuntimeError(f'Sort "{name}" not known')
