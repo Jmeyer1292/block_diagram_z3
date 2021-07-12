@@ -6,7 +6,7 @@ program and parse it into its constituent graphs composed of parts and wires.
 from fbdplc.sorts import Boolean, Integer, SORT_MAP, Time, make_schema
 from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 from lxml import etree
 import re
 
@@ -38,6 +38,23 @@ def _remove_namespaces(root):
     return root
 
 
+def parse_string_literal(value, sort):
+    if sort == 'Bool':
+        v = value.lower()
+        if v == 'true':
+            return True
+        elif v == 'false' or v == '0':
+            return False
+        else:
+            raise ValueError(
+                f'Unsupported literal value {value} for sort {sort}')
+    elif sort == 'Int':
+        v = int(value)
+        return v
+    else:
+        raise NotImplementedError(f'Unimplemented {sort} w/ value {value}')
+
+
 def parse_access(node, ns: str):
     assert(node.tag == 'Access')
     scope = node.get('Scope')
@@ -61,17 +78,9 @@ def parse_access(node, ns: str):
         assert(value_node.tag == 'ConstantValue')
 
         if type_node.text == 'Bool':
-            v = value_node.text.lower()
-            if v == 'true':
-                return LiteralConstantAccess(True, Boolean)
-            elif v == 'false' or v == '0':
-                return LiteralConstantAccess(False, Boolean)
-            else:
-                raise ValueError(
-                    f'Unsupported literal value {value_node.text}')
+            return LiteralConstantAccess(parse_string_literal(value_node.text, 'Bool'), Boolean)
         elif type_node.text == 'Int':
-            value = int(value_node.text)
-            return LiteralConstantAccess(value, Integer)
+            return LiteralConstantAccess(parse_string_literal(value_node.text, 'Int'), Integer)
         else:
             raise ValueError(
                 f'Unsupported literal type {type_node.text} with value {value_node.value}')
@@ -98,7 +107,6 @@ def parse_block(tree: etree._ElementTree) -> Block:
     return parse_function_block(block_node[0])
 
 
-
 def parse_udt(member_node: etree._Element):
     '''
     Recurse over a data structure as declared in the Members section of a
@@ -116,7 +124,7 @@ def parse_udt(member_node: etree._Element):
         sort = SORT_MAP[m.get('Datatype')]
         n = m.get('Name')
         fields[n] = sort
-    
+
     return make_schema(root_datatype, fields)
 
 
@@ -406,3 +414,57 @@ def part_attributes(node):
             negations.append(port)
     attrib['negations'] = negations
     return attrib
+
+# Tags Interface:
+
+
+def _parse_tag_plcuserconstant(node):
+    attributes: etree._Element = node.find('AttributeList')
+    name = attributes.find('Name').text
+    sort = attributes.find('DataTypeName').text
+    value_text = attributes.find('Value').text
+    value = parse_string_literal(value_text, sort)
+    return (name, SORT_MAP[sort], value)
+
+
+def _parse_tag_plctag(node):
+    attributes: etree._Element = node.find('AttributeList')
+    name = attributes.find('Name').text
+    sort = attributes.find('DataTypeName').text
+    return (name, SORT_MAP[sort])
+
+
+def parse_tag_block(root: etree._Element):
+    obj_list = root.find('ObjectList')
+    name_attr = list(root.iter('AttributeList'))[0][0]
+    assert name_attr.tag == 'Name'
+
+    handlers = {
+        'SW.Tags.PlcUserConstant': _parse_tag_plcuserconstant,
+        'SW.Tags.PlcTag': _parse_tag_plctag
+    }
+
+    symbols = []
+
+    for child in obj_list:
+        handler = handlers.get(child.tag)
+        if not handler:
+            print(f'unhandled xml-tag in PLC tag table: {child.tag}')
+            continue
+        symbols.append(handler(child))
+
+    return name_attr.text, symbols
+
+
+def parse_tags(tree: etree._ElementTree):
+    root = tree.getroot()
+    assert(root.tag == 'Document')
+    TAG_TAGS = ['SW.Tags.PlcTagTable', ]
+    tag_node = [b for b in root if b.tag in TAG_TAGS]
+    assert len(tag_node) == 1, f'Tree {tree} has {len(tag_node)} != 1'
+    return parse_tag_block(tag_node[0])
+
+
+def parse_tags_from_file(path: str) -> List:
+    tree = etree.parse(path)
+    return parse_tags(_remove_namespaces(tree))

@@ -1,5 +1,6 @@
+import sys
 from fbdplc.functions import Program
-from fbdplc.s7xml import parse_function_from_file
+from fbdplc.s7xml import parse_function_from_file, parse_tags_from_file
 from fbdplc.modeling import program_model
 import argparse
 
@@ -8,11 +9,19 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('paths', nargs='*')
     parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--tags', action='store_true')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
+
+    if args.tags:
+        for p in args.paths:
+            tags = parse_tags_from_file(p)
+            print(p)
+            print(tags)
+        sys.exit(0)
 
     program = Program('main')
 

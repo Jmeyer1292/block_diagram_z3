@@ -49,4 +49,7 @@ def test_udt_parse():
 def test_time_parse():
   assert s7mxl.parse_time_string('T#2S') == 2000
   assert s7mxl.parse_time_string('T#2000MS') == 2000
-  
+
+def test_tags0():
+  tags = s7mxl.parse_tags_from_file('testdata/tags/tags0.xml')
+  print(tags)
