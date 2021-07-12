@@ -423,15 +423,14 @@ def _parse_tag_plcuserconstant(node):
     name = attributes.find('Name').text
     sort = attributes.find('DataTypeName').text
     value_text = attributes.find('Value').text
-    value = parse_string_literal(value_text, sort)
-    return (name, SORT_MAP[sort], value)
+    return (name, sort, value_text)
 
 
 def _parse_tag_plctag(node):
     attributes: etree._Element = node.find('AttributeList')
     name = attributes.find('Name').text
     sort = attributes.find('DataTypeName').text
-    return (name, SORT_MAP[sort])
+    return (name, sort)
 
 
 def parse_tag_block(root: etree._Element):
