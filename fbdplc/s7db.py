@@ -19,9 +19,9 @@ DB_GRAMMAR = r'''
 
     var_decl: NAME property? ":" sort ";"
 
-    ?sort: TYPE | struct_def
+    ?sort: TYPE | struct_block
 
-    struct_def: "Struct" var_decl* "END_STRUCT"
+    struct_block: "Struct" var_decl* "END_STRUCT"
 
     TYPE: NAME
         | ESCAPED_STRING
@@ -174,6 +174,7 @@ def _parse_decl(decl: lark.Tree):
         entry['type'] = struct
         # Inline initializer TODO
     else:
+        print(f'names {names}\ntypes {types}\narrys {arrays}\nstructs{structs}')
         raise NotImplementedError(f'Cant parse line {decl}')
 
     assert entry['name'] is not None

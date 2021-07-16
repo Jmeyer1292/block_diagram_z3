@@ -71,7 +71,6 @@ def _process_dbs(db_files, ctx):
                 udt = _build_udt(udt_proto, {})
                 register_udt(udt.name, udt)
                 print(f'Anonymous UDT created {udt} w/ symbolic name {name}')
-                input('Press any key')
                 sort = udt
                 pause_plz = True
             else:
@@ -80,8 +79,6 @@ def _process_dbs(db_files, ctx):
 
             resolved_name = '.'.join([root_name, name])
             mem.create(resolved_name, sort)
-            if pause_plz:
-                input()
 
     return mem
 
