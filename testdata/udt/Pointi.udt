@@ -1,0 +1,9 @@
+﻿TYPE "Pointi"
+VERSION : 0.1
+   STRUCT
+      x : Int;
+      y : Int;
+   END_STRUCT;
+
+END_TYPE
+

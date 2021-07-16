@@ -1,0 +1,17 @@
+﻿TYPE "AnonStruct"
+VERSION : 0.1
+   STRUCT
+      command : Struct
+         a : Bool;
+         b : Bool;
+         c : Bool;
+         others : Struct
+            x : Bool;
+            y : Bool;
+            z : Bool := true;   // Definitely keep this one on.
+         END_STRUCT;
+      END_STRUCT;
+   END_STRUCT;
+
+END_TYPE
+

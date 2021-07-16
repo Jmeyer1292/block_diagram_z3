@@ -1,0 +1,12 @@
+﻿DATA_BLOCK "PolygonDB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+"Polygon"
+
+BEGIN
+   vertices[0].x := 0;
+   vertices[0].y := 0;
+
+END_DATA_BLOCK
+

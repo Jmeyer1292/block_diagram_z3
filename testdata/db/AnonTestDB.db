@@ -1,0 +1,14 @@
+﻿DATA_BLOCK "AnonTestDB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      a { S7_SetPoint := 'False'} : "AnonStruct";
+      b : "AnonStruct";   // custom comment for b
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+
