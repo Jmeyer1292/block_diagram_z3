@@ -1,0 +1,8 @@
+﻿TYPE "ArrayWithDefault"
+VERSION : 0.1
+   STRUCT
+      v : Array[0..15] of Bool := [false, true];
+   END_STRUCT;
+
+END_TYPE
+

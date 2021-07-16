@@ -1,0 +1,9 @@
+﻿TYPE "Polygon"
+VERSION : 0.1
+   STRUCT
+      vertices { S7_SetPoint := 'False'} : Array[0..9] of "Pointi";   // Fixed size array
+      n { S7_SetPoint := 'True'} : Int;   // of which this many points are valid
+   END_STRUCT;
+
+END_TYPE
+

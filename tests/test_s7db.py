@@ -33,3 +33,33 @@ def test_udt():
     assert len(symbols) == 2
     assert 'min' in symbols
     assert 'max' in symbols
+
+
+def test_udt_array_with_defaults():
+    '''
+    Parses a data structure with an array with declared defaults like so:
+    v : Array[0..15] of Bool := [false, true];
+    '''
+    parsed = fbdplc.s7db.parse_udt_file('testdata/udt/ArrayWithDefault.udt')
+
+
+def test_udt_polygon():
+    '''
+    A composite of an integer and an array of UDT
+    '''
+    parsed = fbdplc.s7db.parse_udt_file('testdata/udt/Polygon.udt')
+
+
+def test_udt_points():
+    '''
+    Two simple data structures of template<typename T> { x: T, y: T} where T in {Real, Int}
+    '''
+    parsed_f = fbdplc.s7db.parse_udt_file('testdata/udt/Pointf.udt')
+    parsed_i = fbdplc.s7db.parse_udt_file('testdata/udt/Pointi.udt')
+
+
+def test_udt_nested_anon():
+    '''
+    A data structure with two nested anonymous data structures
+    '''
+    parsed = fbdplc.s7db.parse_udt_file('testdata/udt/AnonStruct.udt')
