@@ -1,4 +1,4 @@
-# Impl Plan
+## Impl Plan
 
  * How to model timers?
  * Expand support to static calls
@@ -10,3 +10,7 @@
 ## Not Supported (So Far)
  * Static data and FB calls
  * Default memory initializers
+
+## Cleanups / Misc
+ - Thread safety, reuse of components, udt archive global state
+ - s7db grammar cleanup
