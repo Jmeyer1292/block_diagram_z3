@@ -6,14 +6,13 @@ The function build_program_model() is the primary entry point to this module.
 '''
 
 from fbdplc.s7xml import parse_tags_from_file
-from fbdplc.analysis import exec_and_compare
 from fbdplc.modeling import ProgramModel, program_model
 from fbdplc.apps import parse_s7xml
 from fbdplc.functions import Program
 from z3 import z3
 from fbdplc.graph import MemoryProxy
 from fbdplc import sorts
-from fbdplc.sorts import SORT_MAP, UDTSchema, get_sort_factory, register_udt
+from fbdplc.sorts import UDTSchema, get_sort_factory, register_udt
 from fbdplc import s7db
 
 
@@ -53,14 +52,12 @@ def alloc_anonymous():
 def _process_dbs(db_files, ctx):
     mem = MemoryProxy('', ctx)
     for p in db_files:
-        print(f'Process {p}')
         outline = s7db.parse_db_file(p)
         root_name: str = outline['name']
         if root_name[0] == '"':
             root_name = root_name[1:-1]
 
         for name, entry in outline['symbols'].items():
-            pause_plz = False
             outlined_sort = entry['type']
             if isinstance(outlined_sort, str):
                 sort = get_sort_factory(outlined_sort)
@@ -71,9 +68,7 @@ def _process_dbs(db_files, ctx):
                     'name': alloc_anonymous(), 'symbols': outlined_sort}
                 udt = _build_udt(udt_proto, {})
                 register_udt(udt.name, udt)
-                print(f'Anonymous UDT created {udt} w/ symbolic name {name}')
                 sort = udt
-                pause_plz = True
             else:
                 raise RuntimeError(
                     f'Unrecognized type in db outline {outlined_sort} {type(outlined_sort)}')
@@ -92,8 +87,7 @@ def _build_udts(udt_files):
 
     # Transform these outlines into UDTSchemas, make sure we have definitions for everything,
     # and register them.
-    for name, outline in outlines.items():
-        print(f'Parsing {name}')
+    for _, outline in outlines.items():
         _build_udt(outline, outlines)
 
 
@@ -106,7 +100,6 @@ def process_tags(tag_files, mem: MemoryProxy):
     for entry in symbols:
         name = entry[0]
         sort_text = entry[1]
-        print(f'Allocating tag name={name}, sort={sort_text}')
         sort = get_sort_factory(sort_text)
         mem.create(name, sort)
 
