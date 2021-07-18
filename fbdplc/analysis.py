@@ -86,7 +86,7 @@ def run_covers(program_model: modeling.ProgramModel,
     solver = z3.Solver(ctx=program_model.ctx)
     solver.add(program_model.assertions)
 
-    cover_logic = z3.And([z3.Not(a) for a in covers])
+    cover_logic = z3.And([a for a in covers])
     solver.add(cover_logic)
 
     result = solver.check(assumptions)

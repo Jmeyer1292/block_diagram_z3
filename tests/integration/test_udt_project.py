@@ -1,103 +1,66 @@
-from fbdplc.analysis import exec_and_compare
-from fbdplc.modeling import program_model
-from fbdplc.apps import parse_s7xml
-from fbdplc.functions import Program
-from z3 import z3
-from fbdplc.graph import MemoryProxy
-from fbdplc import sorts
-from fbdplc.sorts import UDTSchema, get_sort_factory, is_primitive, register_udt
-from fbdplc import s7db
+import z3
+from fbdplc.modeling import ProgramModel
+from fbdplc.analysis import exec_and_compare, run_assertions, run_covers
+import fbdplc.project
+
 import glob
-import pprint
 
 
-def _build_udt(outline, outlines):
-    name = outline['name']
-    if name in sorts.g_udt_archive:
-        return sorts.g_udt_archive[name]
-
-    schema = UDTSchema(name)
-    symbols = outline['symbols']
-    for s in symbols.values():
-        sort = s['type']
-        name = s['name']
-        if sort in sorts.SORT_MAP:
-            # Primitive
-            schema.fields[name] = sorts.SORT_MAP[sort]
-        else:
-            # is a UDT, but do we know about it yet?
-            if sort not in sorts.g_udt_archive:
-                _build_udt(outlines[sort], outlines)
-            schema.fields[name] = sorts.g_udt_archive[sort]
-
-    register_udt(schema.name, schema)
-    return schema
-
-
-def _process_dbs(db_files, ctx):
-    # {'"Example1_DB"': {'initializers': {},
-    #                'name': '"Example1_DB"',
-    #                'symbols': {'box0': {'name': 'box0', 'type': '"Box"'},
-    #                            'box1': {'name': 'box1', 'type': '"Box"'}}},
-    mem = MemoryProxy('', ctx)
-    for p in db_files:
-        outline = s7db.parse_db_file(p)
-        root_name: str = outline['name']
-        if root_name[0] == '"':
-            root_name = root_name[1:-1]
-
-        for name, entry in outline['symbols'].items():
-            sort = get_sort_factory(entry['type'])
-            resolved_name = '.'.join([root_name, name])
-            mem.create(resolved_name, sort)
-
-    return mem
-
-
-def _build_udts(udt_files):
-    outlines = {}
-    for f in udt_files:
-        udt_outline = s7db.parse_udt_file(f)
-        outlines[udt_outline['name']] = udt_outline
-
-    # Transform these outlines into UDTSchemas, make sure we have definitions for everything,
-    # and register them.
-    for name, outline in outlines.items():
-        print(f'Parsing {name}')
-        _build_udt(outline, outlines)
-
-
-def build_program_model(udt_files, db_files, xml_files):
-    # Build the data types first:
-    #   This step populates the g_udt_archive in the sorts module
-    _build_udts(udt_files)
-    # Then build the DBs up
-    ctx = z3.Context()
-    dbs = _process_dbs(db_files, ctx)
-    pprint.pprint(dbs._variables)
-    # Then build the actual program logic
-    program = Program('udt_project')
-    for f in xml_files:
-        block = parse_s7xml.parse_function_from_file(f)
-        program.blocks[block.name] = block
-    program.entry = 'Main_Safety_RTG1'
-
-    model = program_model(program, context=ctx, global_memory=dbs)
-    exec_and_compare(model,
+def unit_test(program_model: ProgramModel, verbose=True):
+    # Symbols here are relative to memory or the entry point.
+    # TODO(Jmeyer): No easy way to write inline assertions or reference deeply
+    # nested variables. Consider an "in-the-comments" based approach for annotating
+    # the actual program.
+    exec_and_compare(program_model,
+                     # Given
                      {'ToSafety.sensor_ctrl_a.request_mode': 2,
                       'ToSafety.sensor_ctrl_b.request_mode': 1,
                       'ToSafety.app.start':  True,
                       'ToSafety.app.stop':  True,
                       'faults_clear': True},
-                      {'FromSafety.state.running': False})
+                     # Expect
+                     {'FromSafety.state.running': False})
+
+    # Attempt to prove assertions:
+    # Stop => Not(running); Note that the 0 in the read of stop indicates we are asking
+    # for the initial state. The final state is given by default.
+    stop = program_model.global_mem.read('ToSafety.app.stop', 0)
+    running = program_model.root.read('running')
+    my_assertion = z3.Implies(stop, z3.Not(running))
+
+    proved, counter_example = run_assertions(
+        program_model, [], [my_assertion, ])
+    assert proved, f'Counter example: {counter_example}'
+
+    # Run a "cover" to prove a liveness property. Here we try to show that, assuming we
+    # are not already running, that "running" is a reachable state.
+    initial_running = program_model.root.read('running', 0)
+    proved, example = run_covers(program_model,
+                                 # Assume
+                                 [initial_running == False],
+                                 # Show that
+                                 [running == True, ])
+    assert proved
+
+    if verbose and proved:
+        print(f'Our cover passed with the following example:\n{example}')
 
 
 def main():
-    udt_files = glob.glob('testdata/udt_project/PLC_1/**/*.udt')
-    db_files = glob.glob('testdata/udt_project/PLC_1/**/*.db')
-    xml_files = glob.glob('testdata/udt_project/PLC_1/**/*.xml')
+    project = fbdplc.project.ProjectContext()
 
-    build_program_model(udt_files, db_files, xml_files)
+    # The source files:
+    project.udt_srcs = glob.glob('testdata/udt_project/PLC_1/**/*.udt')
+    project.db_srcs = glob.glob('testdata/udt_project/PLC_1/**/*.db')
+    project.tag_srcs = []
+    project.fb_srcs = glob.glob('testdata/udt_project/PLC_1/**/*.xml')
+
+    # Execution options:
+    project.entry_point = 'Main_Safety_RTG1'
+
+    model = fbdplc.project.build_program_model(project)
+
+    unit_test(model)
 
 
 def test():

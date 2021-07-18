@@ -1,15 +1,20 @@
+'''
+A library for bringing together various components to interface with and analyze a "real" exported
+safety project.
+
+The function build_program_model() is the primary entry point to this module. 
+'''
+
 from fbdplc.s7xml import parse_tags_from_file
 from fbdplc.analysis import exec_and_compare
-from fbdplc.modeling import program_model
+from fbdplc.modeling import ProgramModel, program_model
 from fbdplc.apps import parse_s7xml
 from fbdplc.functions import Program
 from z3 import z3
 from fbdplc.graph import MemoryProxy
 from fbdplc import sorts
-from fbdplc.sorts import SORT_MAP, UDTSchema, get_sort_factory, is_primitive, register_udt
+from fbdplc.sorts import SORT_MAP, UDTSchema, get_sort_factory, register_udt
 from fbdplc import s7db
-import glob
-import pprint
 
 
 def _build_udt(outline, outlines):
@@ -46,10 +51,6 @@ def alloc_anonymous():
 
 
 def _process_dbs(db_files, ctx):
-    # {'"Example1_DB"': {'initializers': {},
-    #                'name': '"Example1_DB"',
-    #                'symbols': {'box0': {'name': 'box0', 'type': '"Box"'},
-    #                            'box1': {'name': 'box1', 'type': '"Box"'}}},
     mem = MemoryProxy('', ctx)
     for p in db_files:
         print(f'Process {p}')
@@ -110,27 +111,58 @@ def process_tags(tag_files, mem: MemoryProxy):
         mem.create(name, sort)
 
 
-def build_program_model(udt_files, db_files, tag_files, xml_files):
-    # Build the data types first:
-    #   This step populates the g_udt_archive in the sorts module
-    _build_udts(udt_files)
-    # Then build the DBs up
+class ProjectContext:
+    '''
+    Container for project data. See __init__ for details: Be sure to specify an
+    entry point for the analysis.
+    '''
+
+    def __init__(self):
+        # 'user data types': Be sure to export with the *.udt type
+        self.udt_srcs = []
+        # 'data block' files. Define global memory stores. Export with *.db type.
+        self.db_srcs = []
+        # 'tag files': Memory mapped IO points. Just more global memory to this
+        # analysis. Has a *.xml extension.
+        self.tag_srcs = []
+        # 'Function block' sources: XML describing the computational graphs that you
+        # draw inside TIA portal.
+        self.fb_srcs = []
+        # Where do we start analysis? A string corresponding to the function block
+        # where we want to start.
+        # The default here is the the name of the automatically generated TIA portal
+        # safety task entry point.
+        self.entry_point = 'Main_Safety_RTG1'
+
+
+def build_program_model(project: ProjectContext) -> ProgramModel:
+    '''
+    Given a project description, this function generates a program model which can be
+    used for analysis by incorporating global symbols with executable code and returning
+    a ProgramModel.
+
+    Currently there are some global memory accesses (in z3 and in this library) so do not
+    call this from multiple threads.
+
+    TODO(JMeyer): See about creating a user data type store and making all of this thread safe.
+    '''
+
+    # First look at the data types because they may be used in all subsequent steps. Note that this
+    # step populates the g_udt_archive in the sorts module and is therefore not threadsafe. It is a
+    # TODO(Jmeyer) to clean this up.
+    _build_udts(project.udt_srcs)
+
+    # Loop through the data blocks (global variables) and build up the symbol table:
     ctx = z3.Context()
-    dbs = _process_dbs(db_files, ctx)
-    pprint.pprint(dbs._variables)
+    mem = _process_dbs(project.db_srcs, ctx)
 
-    process_tags(tag_files, dbs)
+    # Add on the 'tags', or io mapped memory
+    process_tags(project.tag_srcs, mem)
 
-    # Then build the actual program logic
-    program = Program('udt_project')
-    for f in xml_files:
-        print(f'Parsing {f}')
+    # ... then start parsing the executable code:
+    program = Program('')
+    for f in project.fb_srcs:
         block = parse_s7xml.parse_function_from_file(f)
         program.blocks[block.name] = block
-    program.entry = 'Main_Safety_RTG1'
-
-    model = program_model(program, context=ctx, global_memory=dbs)
-    solution = exec_and_compare(model,
-                                {'faults_clear': True},
-                                {'faults_clear': False})
-    print(solution)
+    program.entry = project.entry_point
+    return program_model(program, context=ctx, global_memory=mem)
