@@ -78,13 +78,17 @@ def main():
 
 ```
 
+## Warnings
+
+This is an experimental project meant largely as a proof-of-concept. It ***SHOULD NOT*** be used as the primary means by which you validate your programs! It is at best a secondary measure. I can not guarantee that the parsing of programs is bug free nor that behavior of logic operators have the same semantics as the 'real deal'. 
+
 ## Installation
 
 TODO(Jmeyer)
 
-## Warnings
+## Configuration
 
-This is an experimental project meant largely as a proof-of-concept. It ***SHOULD NOT*** be used as the primary means by which you validate your programs! It is at best a secondary measure. I can not guarantee that the parsing of programs is bug free nor that behavior of logic operators have the same semantics as the 'real deal'. 
+Note that this library uses the Python stdlib `logging` module and logs everything using loggers for each module `__name__`: You can configure logging for this library globally by accessing the root logger `getLogger('fbdplc')` and going from there.
 
 ## References
 
