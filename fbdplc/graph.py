@@ -83,7 +83,7 @@ class MemoryProxy:
                     logger.debug(
                         f'Creating new level {level} of known sort {sort}')
                 else:
-                    logger.warn(
+                    logger.warning(
                         f'Creating new level {level} with UNKNOWN sort')
 
                 this_sort = sort if has_sort else None

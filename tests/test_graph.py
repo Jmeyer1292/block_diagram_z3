@@ -1,7 +1,8 @@
-from z3.z3 import BitVec, BitVecSort
-from fbdplc.sorts import Boolean, Integer, UDTInstance, UDTSchema, make_schema
+from fbdplc.sorts import Boolean, Integer, UDTInstance, make_schema
 from fbdplc.graph import MemoryProxy
 import z3
+
+ACCESS_COUNT_IDX = 0
 
 
 def test_mem():
@@ -11,8 +12,6 @@ def test_mem():
 
     assert 'foo' in mem.list_variables()
     assert len(mem.list_variables()) == 1
-
-    ACCESS_COUNT_IDX = 0
 
     x1 = mem.write('foo')
     assert len(mem.list_variables()) == 1
@@ -45,7 +44,7 @@ def test_udt_creation():
     assert 'box.max.y' in mem.data
 
 
-def test_udt_reading():
+def test_udt_access():
     point_schema = make_schema('Point', {'x': Integer, 'y': Integer})
 
     ctx = z3.Context()
@@ -63,5 +62,9 @@ def test_udt_reading():
     p0_y = mem.read('p0.y')
     assert p0_y is p0.fields['y']
 
-    p0_x_1 = mem.write('p0')
-    print(p0_x_1.fields)
+    assert mem.data['p0.x'][ACCESS_COUNT_IDX] == 0
+    assert mem.data['p0.y'][ACCESS_COUNT_IDX] == 0
+
+    p0_1 = mem.write('p0')
+    assert mem.data['p0.x'][ACCESS_COUNT_IDX] == 1
+    assert mem.data['p0.y'][ACCESS_COUNT_IDX] == 1

@@ -16,7 +16,8 @@ def _load_block(program: Program, target_path: str):
 def test_or():
     program = Program('test_or')
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/simple_or.xml')[0])
+    main_block.networks.append(parse_from_file(
+        'testdata/blocks/simple_or.xml')[0])
     # ToSafety.a and ToSafety.b are global variables and are, at least currently,
     # dynamically allocated. I don't verify the structure of these.
     main_block.variables.temp = [('a_or_b', Boolean)]
@@ -35,7 +36,8 @@ def test_or():
 def test_or_assertions():
     program = Program('test_or')
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/simple_or.xml')[0])
+    main_block.networks.append(parse_from_file(
+        'testdata/blocks/simple_or.xml')[0])
     # ToSafety.a and ToSafety.b are global variables and are, at least currently,
     # dynamically allocated. I don't verify the structure of these.
     main_block.variables.temp = [('a_or_b', Boolean)]
@@ -58,7 +60,8 @@ def test_set():
     # is the "old" way of doing things. I should regen all of these tests in their
     # own complete program.
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/simple_set.xml')[0])
+    main_block.networks.append(parse_from_file(
+        'testdata/blocks/simple_set.xml')[0])
     main_block.variables.temp.append(('fault_clear', Boolean))
 
     mem = MemoryProxy('', z3.Context())
@@ -87,7 +90,8 @@ def test_pbox():
     # is the "old" way of doing things. I should regen all of these tests in their
     # own complete program.
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/simple_pbox.xml')[0])
+    main_block.networks.append(parse_from_file(
+        'testdata/blocks/simple_pbox.xml')[0])
     main_block.variables.temp.extend([
         ('a_or_b', Boolean),
         ('p_trig_state', Boolean),
@@ -113,7 +117,8 @@ def test_threeway():
     # is the "old" way of doing things. I should regen all of these tests in their
     # own complete program.
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/threeway.xml')[0])
+    main_block.networks.append(parse_from_file(
+        'testdata/blocks/threeway.xml')[0])
     main_block.variables.temp.extend([
         ('a_and_b', Boolean),
         ('fault_clear', Boolean), ])
@@ -138,7 +143,8 @@ def test_negate():
     # is the "old" way of doing things. I should regen all of these tests in their
     # own complete program.
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/negate.xml')[0])
+    main_block.networks.append(
+        parse_from_file('testdata/blocks/negate.xml')[0])
     main_block.variables.temp.extend([
         ('fault_clear', Boolean), ])
 
@@ -210,7 +216,8 @@ def test_constants():
     # is the "old" way of doing things. I should regen all of these tests in their
     # own complete program.
     main_block = Block('main')
-    main_block.networks.extend(parse_from_file('testdata/blocks/constants.xml'))
+    main_block.networks.extend(
+        parse_from_file('testdata/blocks/constants.xml'))
     main_block.variables.temp.extend([('ton', Boolean), ])
     main_block.variables.constant.extend([('ALWAYS_FALSE', Boolean), ])
     program.blocks[main_block.name] = main_block
@@ -227,7 +234,8 @@ def test_fc_call():
 
     program = Program('test_fc_call')
     main_block = Block('main')
-    main_block.networks.append(parse_from_file('testdata/blocks/fc_call.xml')[0])
+    main_block.networks.append(parse_from_file(
+        'testdata/blocks/fc_call.xml')[0])
     main_block.variables.temp = [
         ('a', Boolean), ('b', Boolean), ('ton', Boolean)]
 
@@ -280,16 +288,12 @@ def test_double_and():
 
     program = Program('test_double_and')
     user_and_block = parse_function_from_file('testdata/blocks/UserAnd.xml')
-    double_and_block = parse_function_from_file('testdata/blocks/DoubleAnd.xml')
+    double_and_block = parse_function_from_file(
+        'testdata/blocks/DoubleAnd.xml')
     program.blocks[user_and_block.name] = user_and_block
     program.blocks[double_and_block.name] = double_and_block
     program.entry = double_and_block.name
     program_model = modeling.program_model(program)
-
-    print('---')
-    for a in program_model.assertions:
-        print(a, ',')
-    print('---')
 
     cases = _make_double_and_cases()
     for ins, outs in cases:

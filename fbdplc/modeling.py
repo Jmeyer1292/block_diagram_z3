@@ -1,12 +1,15 @@
-from fbdplc.sorts import Boolean, Integer, UDTInstance
-from z3.z3types import Z3Exception
 from fbdplc.functions import Block, Program, Scope
-from typing import List
-import z3
 from fbdplc.parts import MovePart, PartModel, PartPort, PortDirection
 from fbdplc.wires import IdentConnection, NamedConnection, Wire, WireConnection
 from fbdplc.graph import MemoryProxy, ScopeContext, merge_nets
 from fbdplc.access import LiteralConstantAccess, SymbolAccess, SymbolConstantAccess
+
+from typing import List
+import logging
+import z3
+from z3.z3types import Z3Exception
+
+logger = logging.getLogger(__name__)
 
 
 class ProgramModel:
@@ -41,18 +44,18 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
         if a_matches:
             if type(wire.b) == IdentConnection:
                 access = code.accesses[wire.b.target_uid]
-                print(f'\tOther end is a {access}')
+                logger.debug(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
                     sort = scope.mem.sort(access.symbol)
-                    print(f'\tSort determined to be {sort}')
+                    logger.debug(f'\tSort determined to be {sort}')
                     return sort
         elif b_matches:
             if type(wire.a) == IdentConnection:
                 access = code.accesses[wire.a.target_uid]
-                print(f'\tOther end is a {access}')
+                logger.debug(f'\tOther end is a {access}')
                 if isinstance(access, SymbolAccess) and access.scope == 'LocalVariable':
                     sort = scope.mem.sort(access.symbol)
-                    print(f'\tSort determined to be {sort}')
+                    logger.debug(f'\tSort determined to be {sort}')
                     return sort
 
     return result
@@ -60,8 +63,8 @@ def hunt_for_type(uid, code: ScopeContext, scope: Scope):
 
 def _model_block(program: Program, program_model: ProgramModel, block: Block, call_stack: List):
     ns = call_stack[-1].ns
-    print(f'Considering block {block.name} w/ call_stack {call_stack}')
-    print(f'This block has the following scope/namespace: {ns}')
+    logger.info(f'Considering block {block.name} w/ call_stack {call_stack}')
+    logger.info(f'This block has the following scope/namespace: {ns}')
 
     # A block consists of an ordered sequence of networks.
     # Each network could potentially call into other blocks, in which case the translator
@@ -71,22 +74,20 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     # the scope it is contained within.
     code = merge_nets(block.networks)
 
+    logger.debug('--ACCESSES--')
+    # NOTE(Jmeyer): No action should be necessary on these actions at this point in the analysis.
+    # The variables they reference should have already been created.
     for uid, access in code.accesses.items():
-        if isinstance(access, SymbolAccess) and access.scope == 'GlobalVariable':
-            print(f'Processing access {access}')
-            # TODO(Jmeyer): Only supports bools?
-            # isbool = not access.symbol.endswith('case')
-            # program_model.global_mem.create(
-                # access.symbol, Integer if not isbool else Boolean, unique=False)
+        pass
 
     # Build a dictionary of instantiated parts
     callables = {}
-    # So the algorithm is loop over the parts and instantiate them from our block template:
-    print('--Parts--')
+    logger.debug('--PARTS--')
     for uid, part_template in code.parts.items():
-        # I hate this format:
+        # TODO(Jmeyer): I need a more general way to signal that type inference is required. Right
+        # now I've got one part that needs it, so we just check for that.
         if isinstance(part_template, MovePart):
-            print(
+            logger.debug(
                 f'A part requiring type inference was detected: {part_template}')
             part_template.port_type = hunt_for_type(uid, code, call_stack[-1])
             assert part_template.port_type is not None, f'Type inference failed for {part_template}'
@@ -97,7 +98,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
 
     # We can generate the logic for all of the primitives first
     # We can generate function call instances now too.
-    print('--Calls--')
+    logger.debug('--CALLS--')
     for uid, call in code.calls.items():
         next_block = program.blocks[call.target]
 
@@ -120,7 +121,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     # Then wire it all up.
     # The wires define the program execution order, so translation to something akin to SSA
     # should be a matter of following this though.
-    print('--Wires--')
+    logger.debug('--WIRES--')
     for uid, wire in code.wires.items():
         a_is_access = type(wire.a) == IdentConnection
         b_is_access = type(wire.b) == IdentConnection
@@ -135,7 +136,6 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             assert(isinstance(conn, WireConnection))
             if isinstance(conn, IdentConnection):
                 access = code.accesses[conn.target_uid]
-                # print(f'Connection {conn} is a memory access: {access}')
                 # 3 types of memory access right now:
                 if isinstance(access, SymbolConstantAccess):
                     if access.scope == 'LocalConstant':
@@ -148,9 +148,6 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
                 elif isinstance(access, SymbolAccess):
                     if access.scope == 'LocalVariable':
                         local: Scope = call_stack[-1]
-                        # assert(access.symbol in local._variables)
-                        # print(f'{local._variables}')
-                        # print(f'{access.symbol}')
                         return MemoryAccessProxy(access.symbol, local)
                     elif access.scope == 'GlobalVariable':
                         return MemoryAccessProxy(access.symbol, program_model.global_mem)
@@ -161,18 +158,13 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
                     raise RuntimeError(
                         f'Unhandled access type: {type(access)}')
             else:
-                assert(isinstance(conn, NamedConnection))
+                assert isinstance(conn, NamedConnection)
                 part_iface: PartModel = callables[conn.target_uid]
-                # print(f'Connection {conn} is a part connection: {part_iface.name}::{conn.target_port}')
-                # print(part_iface.ports)
                 port = part_iface.ports[conn.target_port]
                 return port
 
         a = _resolve3(wire.a)
-        # print(f'a = {a}')
-
         b = _resolve3(wire.b)
-        # print(f'b = {b}')
 
         write_to_a = a_is_access and b.direction == PortDirection.OUT
         write_to_b = b_is_access and a.direction == PortDirection.OUT
@@ -181,7 +173,6 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         def get_var(resolvable):
             if isinstance(resolvable, MemoryAccessProxy):
                 scope = resolvable.scope
-                # print(f'Get var {resolvable.name} from {scope}')
                 return scope.read(resolvable.name)
             elif isinstance(resolvable, PartPort):
                 return resolvable.external_var()
@@ -199,13 +190,10 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             a_var = get_var(a)
             b_var = get_var(b)
             try:
-                print(f'A {a_var}')
-                print(f'B {b_var}')
                 program_model.assertions.append(a_var == b_var)
             except Z3Exception:
-                print('An exception occurred while assigning wires')
-                print(a_var, a_var.sort())
-                print(b_var, b_var.sort())
+                logger.error(
+                    f'An exception occurred while assigning wires {a_var} of {type(a_var)} and {b_var} of {type(b_var)}')
                 raise
         else:
             the_access = None
@@ -225,27 +213,24 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
             _prev = get_var(the_access)
             _next = get_writeable(the_access)
             other = get_var(the_port)
-            if isinstance(_next, UDTInstance):
-                print(f'UDT: {_next.fields}')
             program_model.assertions.append(_next == other)
 
+            # NOTE(Jmeyer): This is an important step and an "oddity" in the code base: Functions
+            # in this codebase must be pure, so pass-by-reference is translated into an output var
+            # of the normal name and a *special* input parameter that takes the old value.
             old = f'_old_{the_port_name}'
             if old in the_part.ports:
                 old_port = the_part.evar(old)
                 a = _prev == old_port
-                # print(f'Adding {a}')
                 program_model.assertions.append(a)
             else:
-                print(
+                logger.debug(
                     f'Mem write does not have associated old part {old}, part: {the_part}')
 
-            # we want to connect to the port name and the special
-            # _old_port_name ports.
-    print('Done w/ Block')
+    logger.info(f'Done w/ Block: {ns}')
 
 
 def program_model(program: Program, context=None, global_memory=None):
-    assert isinstance(program, Program)
     # Need to load the "main" entry point and start symbolically translating the program.
     main = program.blocks[program.entry]
 
@@ -256,4 +241,5 @@ def program_model(program: Program, context=None, global_memory=None):
     call_stack = [Scope('', '', program_model.ctx, main)]
     program_model.root = call_stack[0]
     _model_block(program, program_model, main, call_stack)
+
     return program_model

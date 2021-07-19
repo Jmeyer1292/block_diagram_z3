@@ -1,5 +1,3 @@
-
-
 from fbdplc.functions import Call
 from fbdplc.s7xml import parse_function_from_file
 
@@ -21,9 +19,3 @@ def test_call():
     call0 = Call('UserAnd#0')
     model0 = call0.instantiate('', ctx, block)
     assert len(model0.ports) == 3
-    print(model0.ports)
-    for k in model0.ports:
-        print(model0.ports[k].name)
-
-
-# TODO(Jmeyer): Test scopes
