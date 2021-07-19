@@ -1,5 +1,8 @@
 import typing
 import z3
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Integer:
@@ -92,7 +95,7 @@ def in_archive(sort):
 def make_schema(name, parsed_schema):
     if name in g_udt_archive:
         # TODO(Jmeyer): Cross check that the types are, in fact, the same
-        print(f'Schema {name} is already in archive')
+        logger.warning(f'Schema {name} is already in archive')
         return g_udt_archive[name]
 
     schema = UDTSchema(name)

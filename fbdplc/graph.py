@@ -1,7 +1,10 @@
 from fbdplc.utils import namespace
-from fbdplc.sorts import SORT_MAP, UDTInstance, UDTSchema, children, g_udt_archive, in_archive, is_primitive
+from fbdplc.sorts import SORT_MAP, UDTInstance, children, is_primitive
 import functools
 from typing import List
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ScopeContext:
@@ -40,7 +43,6 @@ class MemoryProxy:
         return v
 
     def __create(self, name: str, sort, unique=True):
-        # Should this have sort too?
         assert not unique or (
             name not in self.data), f'Symbol "{name}" already in memory'
         assert sort in SORT_MAP.values(), f'Symbol type {sort} not recognized'
@@ -57,32 +59,32 @@ class MemoryProxy:
         # Create the root of the new type and everything under it:
         self.tree[name] = sort
         if is_primitive(sort):
-            print('Creating primitive', name, sort)
+            logger.info(f'Creating primitive "{name}" of sort "{sort}"')
             self.__create(name, sort, unique=unique)
         else:
-            print('Iterating down over children', name, sort)
             for child_name, child_sort in children(sort):
                 self._make_variables(name + '.' + child_name, child_sort)
 
     def create(self, name: str, sort, unique=True):
         # Mem is kept as a tree
         tree_levels = name.split('.')
-        print('Access levels:', tree_levels)
+        logger.debug(f'Access levels: {tree_levels}')
 
         # Create any access levels above the variable being created
         for i in range(len(tree_levels) - 1):
             level = '.'.join(tree_levels[0: i + 1])
-            print('Considering access level:', level)
 
             if level in self.data:
-                print(
+                logger.debug(
                     f'We already have {level} w/ at index = {i} and with sort {self.data[level][1]}')
             else:
                 has_sort = i + 1 == len(tree_levels)
                 if has_sort:
-                    print(f'Creating new level {level} of known sort {sort}')
+                    logger.debug(
+                        f'Creating new level {level} of known sort {sort}')
                 else:
-                    print(f'Creating new level {level} with UNKNOWN sort')
+                    logger.warn(
+                        f'Creating new level {level} with UNKNOWN sort')
 
                 this_sort = sort if has_sort else None
                 self.tree[level] = this_sort

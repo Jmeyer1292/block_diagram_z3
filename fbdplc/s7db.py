@@ -1,6 +1,9 @@
 from typing import Dict
 import lark
 
+import logging
+logger = logging.getLogger(__name__)
+
 GRAMMAR = r'''
 
     start: type_block | data_block
@@ -88,7 +91,6 @@ def _parse_decl(decl: lark.Tree):
     '''
     Parses declerations in DBs or UDTs of the "name : type" variety
     '''
-    print(f'parse decl: {decl}')
     assert decl.data == 'var_decl'
 
     # A type is one of the following kinds:
@@ -136,7 +138,7 @@ def _parse_decl(decl: lark.Tree):
         entry['type'] = struct
         # Inline initializer TODO
     else:
-        print(f'names {names}\ntypes {types}\narrys {arrays}\nstructs{structs}')
+        logger.debug(f'names {names}\ntypes {types}\narrys {arrays}\nstructs{structs}')
         raise NotImplementedError(f'Cant parse line {decl}')
 
     assert entry['name'] is not None
@@ -179,7 +181,6 @@ def _walk_udt(tree: lark.Tree):
     assert len(tree.children) == 1
     block_root = tree.children[0]
     assert block_root.data == "type_block"
-    print(tree.pretty())
     # first child is the name
     block_name = block_root.children[0].value
 

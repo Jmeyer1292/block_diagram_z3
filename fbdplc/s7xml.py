@@ -6,7 +6,7 @@ program and parse it into its constituent graphs composed of parts and wires.
 from fbdplc.sorts import Boolean, Integer, SORT_MAP, Time, make_schema
 from fbdplc.functions import Block, Call, Section
 from fbdplc.utils import namespace
-from typing import List, Literal, Tuple
+from typing import List
 from lxml import etree
 import re
 
@@ -14,6 +14,9 @@ from fbdplc.modeling import ScopeContext
 from fbdplc.parts import AckGlobalPart, AddPart, BitsToWordPart, GreaterThanOrEqualPart, GreaterThanPart, LessThanOrEqualPart, LessThanPart, MovePart, NTriggerPart, OrPart, AndPart, PTriggerPart, PartTemplate, CoilPart, TOfPart, TOnPart, WordToBitsPart
 from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
+
+import logging
+logger = logging.getLogger('__name__')
 
 MATCH_TIME = re.compile(r'T#(\d+)(\w+)')
 
@@ -118,6 +121,10 @@ def parse_udt(member_node: etree._Element):
     assert len(member_node) == 1
 
     # TODO(Jmeyer): I need examples of deep structs to reverse engineer the format
+    # TODO(Jmeyer): We now parse UDTs from their source files and *should* know about
+    # any before we get to this stage when dealing with complete projects. I think we
+    # can remove this or turn it into a diagnostic check (to verify the structure of)
+    # the UDT.
     fields = {}
     for m in member_node[0][0]:
         assert m.tag == 'Member'
@@ -131,7 +138,6 @@ def parse_udt(member_node: etree._Element):
 def parse_function_block(root: etree._Element):
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
-    # print(f'PARSING {name_node}, {block_name}')
     block = Block(block_name)
     # Variables
     iface_node = [l for l in root.iter('Interface')]
@@ -159,14 +165,14 @@ def parse_function_block(root: etree._Element):
                 continue
 
             if datatype.startswith('"'):
-                print(f'{n} has a custom data structure of type {datatype}')
+                logger.debug(
+                    f'{n} has a custom data structure of type {datatype}')
                 udt = parse_udt(member)
                 block.variables.add(section_enum, n, udt)
             else:
                 block.variables.add(section_enum, n, SORT_MAP[datatype])
 
     block.networks = discover_networks(root)
-    # print(f'...Finished parsing block {block_name}')
     return block
 
 
@@ -182,11 +188,10 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
     wires = list(root.iter('Wires'))
     parts = list(root.iter('Parts'))
 
-    # print(f'Considering network at {root}')
-
     context = ScopeContext(ns)
     if len(wires) == 0:
-        print('NO WIRES')
+        logger.info(
+            f'Network {ns} contains no logic. Skipping further analysis.')
         return context
 
     wires = wires[0]
@@ -246,12 +251,10 @@ def parse_network(root: etree._ElementTree) -> ScopeContext:
 
 
 def discover_networks(tree):
-    # print(f'Discover networks: {tree}')
     networks = tree.iter('SW.Blocks.CompileUnit')
 
     result = []
     for r in networks:
-        # print(f'Trying compile unit: {r}')
         result.append(parse_network(r))
     return result
 
@@ -394,11 +397,6 @@ def parse_function_from_text(path: str) -> Block:
     return parse_block(_remove_namespaces(tree))
 
 
-def parse_from_string(text: str) -> List[ScopeContext]:
-    tree: etree._ElementTree = etree.fromstring(text)
-    return _extract_networks(tree)
-
-
 def part_attributes(node):
     attrib = {}
     negations = []
@@ -448,7 +446,7 @@ def parse_tag_block(root: etree._Element):
     for child in obj_list:
         handler = handlers.get(child.tag)
         if not handler:
-            print(f'unhandled xml-tag in PLC tag table: {child.tag}')
+            logger.warn(f'unhandled xml-tag in PLC tag table: {child.tag}')
             continue
         symbols.append(handler(child))
 
