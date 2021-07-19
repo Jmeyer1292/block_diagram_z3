@@ -5,6 +5,10 @@ from fbdplc.functions import Program
 from fbdplc.modeling import program_model
 import z3
 
+import logging
+logging.basicConfig()
+logging.getLogger('fbdplc').setLevel(logging.INFO)
+
 
 def _load_block(program: Program, target_path: str):
     block = parse_function_from_file(target_path)
