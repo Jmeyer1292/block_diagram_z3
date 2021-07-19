@@ -1,4 +1,5 @@
 import fbdplc.s7db
+import pprint
 
 
 def test_example0():
@@ -63,3 +64,16 @@ def test_udt_nested_anon():
     A data structure with two nested anonymous data structures
     '''
     parsed = fbdplc.s7db.parse_udt_file('testdata/udt/AnonStruct.udt')
+
+
+def test_db_anon():
+    parsed = fbdplc.s7db.parse_db_file('testdata/db/AnonTestDB.db')
+
+
+def test_db_polygon():
+    '''
+    The structure of a DB can be adhoc but it can also be derived from a user defined type.
+    This example contains a DB mapped to the "Polygon" type (defined in "testdata/udt/Polygon.udt")
+    and also has a couple of special initializers. TODO(Jmeyer): Support for the init statements.
+    '''
+    parsed = fbdplc.s7db.parse_db_file('testdata/db/PolygonDB.db')

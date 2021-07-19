@@ -13,12 +13,14 @@ GRAMMAR = r'''
 
     ?section:   struct_block
         |       version
-        |       var_block
+        |       interface
         |       init_block
 
     init_block: "BEGIN" assignment*
     
-    var_block: "NON_RETAIN" "VAR" var_decl* "END_VAR"
+    interface:  "NON_RETAIN" (var_block | TYPE)
+
+    var_block: "VAR" var_decl* "END_VAR"
 
     version: "VERSION :" NUMBER
 
@@ -51,7 +53,9 @@ GRAMMAR = r'''
 
     inline_array: "[" (literal ","?)+ "]"
 
-    ASSIGNMENT_NAME: ("_"|LETTER) ("."|"_"|LETTER|DIGIT)*
+    ASSIGNMENT_NAME: ("_"|LETTER) ("."|"_"|LETTER| DIGIT | SUBSCRIPT)*
+
+    SUBSCRIPT: "[" DIGIT+ "]"
 
     %import common.ESCAPED_STRING
     %import common.CNAME -> NAME
