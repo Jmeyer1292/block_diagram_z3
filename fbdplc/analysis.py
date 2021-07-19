@@ -1,9 +1,11 @@
 from z3.z3 import ExprRef
 import fbdplc.modeling as modeling
-from fbdplc.functions import Scope
 from typing import List, Tuple
 
 import z3
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solver, z3.ModelRef]:
@@ -62,20 +64,20 @@ def run_assertions(program_model: modeling.ProgramModel,
 
     result = solver.check(assumptions)
     if result == z3.unsat:
-        print('PASS: No assertions could be reached')
+        logger.info('PASS: No assertions could be reached')
         return (True, None)
     elif result == z3.unknown:
-        print('FAIL [UKNOWN]: z3 could not prove the assertions were unreachable')
+        logger.warn(
+            'FAIL [UNKNOWN]: z3 could not prove the assertions were unreachable')
         return (False, None)
     else:
         # sat
-        print('FAIL [Proven]: One or more assertions were untrue')
+        logger.info('FAIL [Proven]: One or more assertions were untrue')
         model = solver.model()
 
-        print(f'Counter-Example: {model}')
         for a in assertions:
             r = model.evaluate(a)
-            print(f'  Assertion {a} ==> {r}')
+            logger.info(f'  assertion {a} ==> passed: {r}')
 
         return (False, model)
 
@@ -91,12 +93,13 @@ def run_covers(program_model: modeling.ProgramModel,
 
     result = solver.check(assumptions)
     if result == z3.sat:
-        print('PASS: All covers reachable')
+        logger.info('PASS: All covers reachable')
         return (True, solver.model())
     elif result == z3.unknown:
-        print('FAIL [UKNOWN]: z3 could not prove the covers were reachable')
+        logger.warn(
+            'FAIL [UNKNOWN]: z3 could not prove the covers were reachable')
         return (False, None)
     else:
         # unsat
-        print('FAIL [Proven]: One of the covers is not satisfiable')
+        logger.info('FAIL [Proven]: One of the covers is not satisfiable')
         return (True, None)
