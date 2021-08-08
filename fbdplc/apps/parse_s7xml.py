@@ -22,6 +22,9 @@ if __name__ == '__main__':
             print(p)
             print(tags)
         sys.exit(0)
+    elif not args.paths:
+        print('No inputs specified. Run with --help.')
+        sys.exit(0)
 
     program = Program('main')
 
