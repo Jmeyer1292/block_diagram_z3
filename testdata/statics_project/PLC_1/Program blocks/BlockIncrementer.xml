@@ -38,17 +38,53 @@
       <HeaderFamily />
       <HeaderName />
       <HeaderVersion>0.1</HeaderVersion>
-      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
-  <Section Name="Input" />
-  <Section Name="Output" />
-  <Section Name="InOut" />
-  <Section Name="Static">
-    <Member Name="a" Datatype="&quot;MyCounter&quot;" Accessibility="Public"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute></AttributeList><Sections><Section Name="Input"><Member Name="increment" Datatype="Int" /></Section><Section Name="Output" /><Section Name="InOut" /><Section Name="Static"><Member Name="counter" Datatype="Int" /></Section></Sections></Member>
-    <Member Name="b" Datatype="&quot;MyCounter&quot;" Accessibility="Public"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute></AttributeList><Sections><Section Name="Input"><Member Name="increment" Datatype="Int" /></Section><Section Name="Output" /><Section Name="InOut" /><Section Name="Static"><Member Name="counter" Datatype="Int" /></Section></Sections></Member>
-  </Section>
-  <Section Name="Temp" />
-  <Section Name="Constant" />
-</Sections></Interface>
+      <Interface>
+        <Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+          <Section Name="Input" />
+          <Section Name="Output" />
+          <Section Name="InOut" />
+          <Section Name="Static">
+            <Member Name="a" Datatype="&quot;MyCounter&quot;" Accessibility="Public">
+              <AttributeList>
+                <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute>
+                <BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute>
+                <BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute>
+                <BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute>
+              </AttributeList>
+              <Sections>
+                <Section Name="Input">
+                  <Member Name="increment" Datatype="Int" />
+                </Section>
+                <Section Name="Output" />
+                <Section Name="InOut" />
+                <Section Name="Static">
+                  <Member Name="counter" Datatype="Int" />
+                </Section>
+              </Sections>
+            </Member>
+            <Member Name="b" Datatype="&quot;MyCounter&quot;" Accessibility="Public">
+              <AttributeList>
+                <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute>
+                <BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute>
+                <BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute>
+                <BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute>
+              </AttributeList>
+              <Sections>
+                <Section Name="Input">
+                  <Member Name="increment" Datatype="Int" />
+                </Section>
+                <Section Name="Output" />
+                <Section Name="InOut" />
+                <Section Name="Static">
+                  <Member Name="counter" Datatype="Int" />
+                </Section>
+              </Sections>
+            </Member>
+          </Section>
+          <Section Name="Temp" />
+          <Section Name="Constant" />
+        </Sections>
+      </Interface>
       <IsIECCheckEnabled>false</IsIECCheckEnabled>
       <MemoryLayout>Optimized</MemoryLayout>
       <Name>BlockIncrementer</Name>
@@ -70,56 +106,58 @@
       </MultilingualText>
       <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
         <AttributeList>
-          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
-  <Parts>
-    <Access Scope="LiteralConstant" UId="21">
-      <Constant>
-        <ConstantType>Int</ConstantType>
-        <ConstantValue>1</ConstantValue>
-      </Constant>
-    </Access>
-    <Access Scope="LiteralConstant" UId="22">
-      <Constant>
-        <ConstantType>Int</ConstantType>
-        <ConstantValue>1</ConstantValue>
-      </Constant>
-    </Access>
-    <Call UId="23">
-      <CallInfo Name="MyCounter" BlockType="FB">
-        <Instance Scope="LocalVariable" UId="24">
-          <Component Name="a" />
-        </Instance>
-        <Parameter Name="increment" Section="Input" Type="Int" />
-      </CallInfo>
-    </Call>
-    <Call UId="25">
-      <CallInfo Name="MyCounter" BlockType="FB">
-        <Instance Scope="LocalVariable" UId="26">
-          <Component Name="b" />
-        </Instance>
-        <Parameter Name="increment" Section="Input" Type="Int" />
-      </CallInfo>
-    </Call>
-  </Parts>
-  <Wires>
-    <Wire UId="29">
-      <OpenCon UId="27" />
-      <NameCon UId="23" Name="en" />
-    </Wire>
-    <Wire UId="30">
-      <IdentCon UId="21" />
-      <NameCon UId="23" Name="increment" />
-    </Wire>
-    <Wire UId="31">
-      <OpenCon UId="28" />
-      <NameCon UId="25" Name="en" />
-    </Wire>
-    <Wire UId="32">
-      <IdentCon UId="22" />
-      <NameCon UId="25" Name="increment" />
-    </Wire>
-  </Wires>
-</FlgNet></NetworkSource>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="LiteralConstant" UId="21">
+                  <Constant>
+                    <ConstantType>Int</ConstantType>
+                    <ConstantValue>1</ConstantValue>
+                  </Constant>
+                </Access>
+                <Access Scope="LiteralConstant" UId="22">
+                  <Constant>
+                    <ConstantType>Int</ConstantType>
+                    <ConstantValue>1</ConstantValue>
+                  </Constant>
+                </Access>
+                <Call UId="23">
+                  <CallInfo Name="MyCounter" BlockType="FB">
+                    <Instance Scope="LocalVariable" UId="24">
+                      <Component Name="a" />
+                    </Instance>
+                    <Parameter Name="increment" Section="Input" Type="Int" />
+                  </CallInfo>
+                </Call>
+                <Call UId="25">
+                  <CallInfo Name="MyCounter" BlockType="FB">
+                    <Instance Scope="LocalVariable" UId="26">
+                      <Component Name="b" />
+                    </Instance>
+                    <Parameter Name="increment" Section="Input" Type="Int" />
+                  </CallInfo>
+                </Call>
+              </Parts>
+              <Wires>
+                <Wire UId="29">
+                  <OpenCon UId="27" />
+                  <NameCon UId="23" Name="en" />
+                </Wire>
+                <Wire UId="30">
+                  <IdentCon UId="21" />
+                  <NameCon UId="23" Name="increment" />
+                </Wire>
+                <Wire UId="31">
+                  <OpenCon UId="28" />
+                  <NameCon UId="25" Name="en" />
+                </Wire>
+                <Wire UId="32">
+                  <IdentCon UId="22" />
+                  <NameCon UId="25" Name="increment" />
+                </Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
           <ProgrammingLanguage>F_FBD</ProgrammingLanguage>
         </AttributeList>
         <ObjectList>
@@ -147,56 +185,58 @@
       </SW.Blocks.CompileUnit>
       <SW.Blocks.CompileUnit ID="8" CompositionName="CompileUnits">
         <AttributeList>
-          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
-  <Parts>
-    <Access Scope="LiteralConstant" UId="21">
-      <Constant>
-        <ConstantType>Int</ConstantType>
-        <ConstantValue>2</ConstantValue>
-      </Constant>
-    </Access>
-    <Access Scope="LiteralConstant" UId="22">
-      <Constant>
-        <ConstantType>Int</ConstantType>
-        <ConstantValue>3</ConstantValue>
-      </Constant>
-    </Access>
-    <Call UId="23">
-      <CallInfo Name="MyCounter" BlockType="FB">
-        <Instance Scope="LocalVariable" UId="24">
-          <Component Name="a" />
-        </Instance>
-        <Parameter Name="increment" Section="Input" Type="Int" />
-      </CallInfo>
-    </Call>
-    <Call UId="25">
-      <CallInfo Name="MyCounter" BlockType="FB">
-        <Instance Scope="LocalVariable" UId="26">
-          <Component Name="b" />
-        </Instance>
-        <Parameter Name="increment" Section="Input" Type="Int" />
-      </CallInfo>
-    </Call>
-  </Parts>
-  <Wires>
-    <Wire UId="29">
-      <OpenCon UId="27" />
-      <NameCon UId="23" Name="en" />
-    </Wire>
-    <Wire UId="30">
-      <IdentCon UId="21" />
-      <NameCon UId="23" Name="increment" />
-    </Wire>
-    <Wire UId="31">
-      <OpenCon UId="28" />
-      <NameCon UId="25" Name="en" />
-    </Wire>
-    <Wire UId="32">
-      <IdentCon UId="22" />
-      <NameCon UId="25" Name="increment" />
-    </Wire>
-  </Wires>
-</FlgNet></NetworkSource>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="LiteralConstant" UId="21">
+                  <Constant>
+                    <ConstantType>Int</ConstantType>
+                    <ConstantValue>2</ConstantValue>
+                  </Constant>
+                </Access>
+                <Access Scope="LiteralConstant" UId="22">
+                  <Constant>
+                    <ConstantType>Int</ConstantType>
+                    <ConstantValue>3</ConstantValue>
+                  </Constant>
+                </Access>
+                <Call UId="23">
+                  <CallInfo Name="MyCounter" BlockType="FB">
+                    <Instance Scope="LocalVariable" UId="24">
+                      <Component Name="a" />
+                    </Instance>
+                    <Parameter Name="increment" Section="Input" Type="Int" />
+                  </CallInfo>
+                </Call>
+                <Call UId="25">
+                  <CallInfo Name="MyCounter" BlockType="FB">
+                    <Instance Scope="LocalVariable" UId="26">
+                      <Component Name="b" />
+                    </Instance>
+                    <Parameter Name="increment" Section="Input" Type="Int" />
+                  </CallInfo>
+                </Call>
+              </Parts>
+              <Wires>
+                <Wire UId="29">
+                  <OpenCon UId="27" />
+                  <NameCon UId="23" Name="en" />
+                </Wire>
+                <Wire UId="30">
+                  <IdentCon UId="21" />
+                  <NameCon UId="23" Name="increment" />
+                </Wire>
+                <Wire UId="31">
+                  <OpenCon UId="28" />
+                  <NameCon UId="25" Name="en" />
+                </Wire>
+                <Wire UId="32">
+                  <IdentCon UId="22" />
+                  <NameCon UId="25" Name="increment" />
+                </Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
           <ProgrammingLanguage>F_FBD</ProgrammingLanguage>
         </AttributeList>
         <ObjectList>
