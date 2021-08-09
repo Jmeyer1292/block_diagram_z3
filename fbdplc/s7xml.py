@@ -118,19 +118,31 @@ def parse_udt(member_node: etree._Element):
     root_datatype = member_node.get('Datatype')
 
     assert root_datatype.startswith('"')  # udt
-    assert len(member_node) == 1
 
     # TODO(Jmeyer): I need examples of deep structs to reverse engineer the format
     # TODO(Jmeyer): We now parse UDTs from their source files and *should* know about
     # any before we get to this stage when dealing with complete projects. I think we
     # can remove this or turn it into a diagnostic check (to verify the structure of)
     # the UDT.
+    # NOTE(Jmeyer): We can also have FB (static object) calls here. These implicitly
+    # create a datatype containing the static section.
     fields = {}
-    for m in member_node[0][0]:
-        assert m.tag == 'Member'
-        sort = SORT_MAP[m.get('Datatype')]
-        n = m.get('Name')
-        fields[n] = sort
+    for a in member_node:
+        if a.tag == 'AttributeList':
+            continue
+        elif a.tag == 'Sections':
+            for section in a:
+                assert section.tag == 'Section'
+                section_name = section.get('Name')
+                if section_name in ['None', 'Static']:
+                    for m in section:
+                        assert m.tag == 'Member'
+                        sort = SORT_MAP[m.get('Datatype')]
+                        n = m.get('Name')
+                        fields[n] = sort
+        else:
+            raise NotImplementedError(
+                f'Unrecognized tag in Block Interface description {a.tag}')
 
     return make_schema(root_datatype, fields)
 
@@ -138,15 +150,15 @@ def parse_udt(member_node: etree._Element):
 def parse_function_block(root: etree._Element):
 
     BLOCK_TYPE_MAP = {
-        'SW.Blocks.FB' : Block.BLOCK_TYPE_FB,
-        'SW.Blocks.FC' : Block.BLOCK_TYPE_FC,
+        'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
+        'SW.Blocks.FC': Block.BLOCK_TYPE_FC,
     }
 
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
     block_type = BLOCK_TYPE_MAP[root.tag]
     block = Block(block_name, block_type=block_type)
-    
+
     # Variables
     iface_node = [l for l in root.iter('Interface')]
     assert(len(iface_node) == 1)
