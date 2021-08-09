@@ -83,8 +83,10 @@ class Block:
     FB blocks have state associated with them.
     FC blocks are stateless; a sort of general function call.
     '''
+    BLOCK_TYPE_FC = 'FC'
+    BLOCK_TYPE_FB = 'FB'
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, block_type: str = BLOCK_TYPE_FC):
         pass
         # A function block has a name
         # It has an interface which tracks what variables we have.
@@ -95,6 +97,7 @@ class Block:
         self.name = name
         self.variables = BlockVariables()  # includes constants
         self.networks = []
+        self.block_type = block_type
 
 
 class Scope:

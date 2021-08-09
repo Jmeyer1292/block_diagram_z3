@@ -136,9 +136,17 @@ def parse_udt(member_node: etree._Element):
 
 
 def parse_function_block(root: etree._Element):
+
+    BLOCK_TYPE_MAP = {
+        'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
+        'SW.Blocks.FC': Block.BLOCK_TYPE_FC,
+    }
+
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
-    block = Block(block_name)
+    block_type = BLOCK_TYPE_MAP[root.tag]
+    block = Block(block_name, block_type=block_type)
+
     # Variables
     iface_node = [l for l in root.iter('Interface')]
     assert(len(iface_node) == 1)
