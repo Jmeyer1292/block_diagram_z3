@@ -102,7 +102,6 @@ def parse_access(node, ns: str):
 
 
 def parse_block(tree: etree._ElementTree) -> Block:
-    logger.info(f'Parsing {tree}')
     root = tree.getroot()
     assert(root.tag == 'Document')
     BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
