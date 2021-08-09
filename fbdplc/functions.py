@@ -169,9 +169,10 @@ class Scope:
 
 
 class Call(PartTemplate):
-    def __init__(self, target: str):
+    def __init__(self, target: str, static_memory_access=None):
         super().__init__(target)
         self.target = target
+        self.static_memory_access = static_memory_access
         # The data structure also has info about the block type
         # and each of the parameters. Is this redundant with the
         # info in the associated call?

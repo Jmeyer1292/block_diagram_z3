@@ -200,7 +200,19 @@ def parse_call(node: etree._Element, ns: str):
     uid = node.get('UId')
     call_info = node[0]
     target = call_info.get('Name')
-    return uid, Call(target)
+    block_type = call_info.get('BlockType')
+    assert block_type
+
+    static_memory_access = None
+    if block_type == 'FB':
+        # FBs have static memory associated with them and the description
+        # should point to the location of said memory.
+        instance = call_info[0]
+        scope = instance.get('Scope')
+        symbol = instance[0].get('Name')
+        static_memory_access = SymbolAccess(scope, symbol)
+
+    return uid, Call(target, static_memory_access)
 
 
 def parse_network(root: etree._ElementTree) -> ScopeContext:
