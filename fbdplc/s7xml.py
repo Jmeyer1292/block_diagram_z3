@@ -16,7 +16,7 @@ from fbdplc.wires import NamedConnection, IdentConnection, Wire
 from fbdplc.access import *
 
 import logging
-logger = logging.getLogger('__name__')
+logger = logging.getLogger(__name__)
 
 MATCH_TIME = re.compile(r'T#(\d+)(\w+)')
 
@@ -102,6 +102,7 @@ def parse_access(node, ns: str):
 
 
 def parse_block(tree: etree._ElementTree) -> Block:
+    logger.info(f'Parsing {tree}')
     root = tree.getroot()
     assert(root.tag == 'Document')
     BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
@@ -138,15 +139,15 @@ def parse_udt(member_node: etree._Element):
 def parse_function_block(root: etree._Element):
 
     BLOCK_TYPE_MAP = {
-        'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
-        'SW.Blocks.FC': Block.BLOCK_TYPE_FC,
+        'SW.Blocks.FB' : Block.BLOCK_TYPE_FB,
+        'SW.Blocks.FC' : Block.BLOCK_TYPE_FC,
     }
 
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
     block_type = BLOCK_TYPE_MAP[root.tag]
     block = Block(block_name, block_type=block_type)
-
+    
     # Variables
     iface_node = [l for l in root.iter('Interface')]
     assert(len(iface_node) == 1)
