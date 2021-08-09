@@ -1,0 +1,16 @@
+﻿DATA_BLOCK "DB4_C"
+{ S7_Optimized_Access := 'TRUE' }
+NAME : FCDI
+VERSION : 0.1
+NON_RETAIN
+"FB2_C"
+
+BEGIN
+   increment_C := 138146;
+   counter_C := 118848;
+   dnCALLCHECK_C := 114659;
+   dnTRACER_START := 20944;
+   dnGCTX_DBNUMBER := 30011;
+
+END_DATA_BLOCK
+

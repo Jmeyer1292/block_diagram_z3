@@ -1,0 +1,17 @@
+﻿DATA_BLOCK "FB2_C_GCTX_DB"
+{ S7_Optimized_Access := 'TRUE' }
+NAME : F_GLOBDB
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      GCTX_DINT { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..2, 0..0] of DInt;
+   END_VAR
+
+
+BEGIN
+   GCTX_DINT[0,0] := 1885664965;
+   GCTX_DINT[1,0] := 19548;
+   GCTX_DINT[2,0] := 1885684513;
+
+END_DATA_BLOCK
+

@@ -1,0 +1,11 @@
+﻿DATA_BLOCK "Main_Safety_RTG1_DB"
+{ S7_Optimized_Access := 'TRUE' }
+NAME : FUSI
+VERSION : 0.1
+NON_RETAIN
+"Main_Safety_RTG1"
+
+BEGIN
+
+END_DATA_BLOCK
+

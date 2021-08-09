@@ -1,0 +1,15 @@
+﻿DATA_BLOCK "FB32773_IDB_C"
+{InstructionName := 'F_CTRLRT';
+ LibVersion := '1.3';
+ S7_Optimized_Access := 'TRUE' }
+AUTHOR : SafeSys
+FAMILY : F_CTRL
+NAME : F_CTRLRT
+VERSION : 1.0
+NON_RETAIN
+F_CTRLRT
+
+BEGIN
+
+END_DATA_BLOCK
+

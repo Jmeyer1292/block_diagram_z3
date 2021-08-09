@@ -1,0 +1,17 @@
+﻿DATA_BLOCK "FOB_RTG1_GCTX_DB"
+{ S7_Optimized_Access := 'TRUE' }
+NAME : F_GLOBDB
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      GCTX_DINT { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..0, 0..2] of DInt;
+   END_VAR
+
+
+BEGIN
+   GCTX_DINT[0,0] := 1885670433;
+   GCTX_DINT[0,1] := 32;
+   GCTX_DINT[0,2] := 8609;
+
+END_DATA_BLOCK
+

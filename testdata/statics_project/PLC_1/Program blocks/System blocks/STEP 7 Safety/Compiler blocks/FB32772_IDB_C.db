@@ -1,0 +1,15 @@
+﻿DATA_BLOCK "FB32772_IDB_C"
+{InstructionName := 'F_ETLI';
+ LibVersion := '2.0';
+ S7_Optimized_Access := 'TRUE' }
+AUTHOR : SafeSys
+FAMILY : F_CTRL
+NAME : F_ET_LI
+VERSION : 2.0
+NON_RETAIN
+F_ETLI
+
+BEGIN
+
+END_DATA_BLOCK
+

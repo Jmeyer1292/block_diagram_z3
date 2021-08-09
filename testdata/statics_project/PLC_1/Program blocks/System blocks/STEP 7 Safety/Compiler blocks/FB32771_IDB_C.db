@@ -1,0 +1,18 @@
+﻿DATA_BLOCK "FB32771_IDB_C"
+{InstructionName := 'F_CTRL2';
+ LibVersion := '1.4';
+ S7_Optimized_Access := 'TRUE' }
+AUTHOR : SafeSys
+FAMILY : F_CTRL
+NAME : F_CTRL_2
+VERSION : 1.2
+NON_RETAIN
+F_CTRL2
+
+BEGIN
+   dnMOD_MODE_C := 55467;
+   dnP_FOB := 8966;
+   wRTG_NO := W#16#1;
+
+END_DATA_BLOCK
+
