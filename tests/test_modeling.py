@@ -358,3 +358,44 @@ def test_sensor_examples():
     inputs.update(command_b)
 
     exec_and_compare(model, inputs, {'all_ok': True})
+
+
+def test_fb_block_mycounter():
+    '''
+    See testdata/statics_project/
+
+    Tests just the 'MyCounter' component which implements a static count variable s.t.
+        count := count + increment
+    where increment is a user provided parameter.
+    '''
+    program = Program('statics')
+    program.entry = _load_block(
+        program, 'testdata/statics_project/PLC_1/Program blocks/MyCounter.xml')
+    model = modeling.program_model(program)
+
+    for i in range(-2, 3):
+        exec_and_compare(model,
+                         {'increment': i, 'counter': 0},
+                         {'counter': i}
+                         )
+
+
+def test_fb_block_blockincrementer():
+    '''
+    See testdata/statics_project/
+
+    Tests the 'BlockIncrementer' component which composes static MyCounter objects with some
+    fixed constants s.t.
+        a.counter := a.counter + 1 + 2
+        b.counter := b.counter + 1 + 3
+    There are no user parameters.
+    '''
+    program = Program('statics')
+    program.entry = _load_block(
+        program, 'testdata/statics_project/PLC_1/Program blocks/BlockIncrementer.xml')
+    _load_block(
+        program, 'testdata/statics_project/PLC_1/Program blocks/MyCounter.xml')
+    model = modeling.program_model(program)
+
+    exec_and_compare(model, {'a.counter': 0, 'b.counter': 0},
+                     {'a.counter': 3, 'b.counter': 4})
