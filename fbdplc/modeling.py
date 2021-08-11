@@ -239,7 +239,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
 
 def program_model(program: Program, context=None, global_memory=None):
     # Need to load the "main" entry point and start symbolically translating the program.
-    main = program.blocks[program.entry]
+    main: Block = program.blocks[program.entry]
 
     program_model = ProgramModel(ctx=context)
     if global_memory:
@@ -247,6 +247,17 @@ def program_model(program: Program, context=None, global_memory=None):
 
     call_stack = [Scope('', '', program_model.ctx, main)]
     program_model.root = call_stack[0]
+
+    if main.block_type == Block.BLOCK_TYPE_FB:
+        logger.info(
+            f'Chosen entry point "{main}" is a FB call. Allocating static data onto the global memory table.')
+        statics = main.variables.statics
+        access = SymbolAccess('GlobalVariable', '__main')
+        for name, sort in statics:
+            program_model.global_mem.create('__main.' + name, sort)
+        call_stack[-1].static_access_info = access
+        call_stack[-1].global_mem = program_model.global_mem
+
     _model_block(program, program_model, main, call_stack)
 
     return program_model

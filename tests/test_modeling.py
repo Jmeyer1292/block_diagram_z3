@@ -397,5 +397,5 @@ def test_fb_block_blockincrementer():
         program, 'testdata/statics_project/PLC_1/Program blocks/MyCounter.xml')
     model = modeling.program_model(program)
 
-    exec_and_compare(model, {'a.counter': 0, 'b.counter': 0},
-                     {'a.counter': 3, 'b.counter': 4})
+    exec_and_compare(model, {'__main.a.counter': 0, '__main.b.counter': 0},
+                     {'__main.a.counter': 3, '__main.b.counter': 4})

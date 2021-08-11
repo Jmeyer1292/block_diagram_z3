@@ -123,6 +123,7 @@ class Scope:
         self.ctx = ctx
         self.parent: Scope = parent
         self.static_access_info = None  # TODO(Jmeyer)
+        self.global_mem = None # TODO(Jmeyer)
 
         self.mem = MemoryProxy(self.ns, ctx)
         self._make_variables()
@@ -179,8 +180,41 @@ class Scope:
 
         return assertions
 
-    def _resolver_helper(self):
-        pass
+    def _resolver_helper(self, name: str, index, accesses, is_read):
+        scope = self.static_access_info.scope
+        symbol = self.static_access_info.symbol
+        logger.info(
+            f'  This scopes static access scope: {self.static_access_info}')
+        if self.static_access_info:
+
+            if scope == 'LocalVariable':
+                logger.debug(
+                    f'LocalVariable scope detected. Deferring resolution to parent scope.')
+                assert self.parent
+                # Our symbol is called something different in the parent scope:
+                return self.parent._resolver_helper(symbol, index, [name, ] + accesses, is_read)
+            elif scope == 'GlobalVariable':
+                helper = '.'.join([a for a in accesses])
+                global_symbol = f'{symbol}.{name}.{helper}'
+                logger.debug(
+                    f'Global variable found! Search for resolution has terminated! {global_symbol}')
+                if self.global_mem:
+                    if is_read:
+                        v = self.global_mem.read(global_symbol, index)
+                    else:
+                        v = self.global_mem.write(global_symbol)
+                    logger.info(f'  RESOLVED TO {v}')
+                    return v
+                else:
+                    # TODO(Jmeyer): Arrange memory scopes into trees!
+                    raise NotImplementedError(
+                        f'Static access to global memory {name}')
+            else:
+                raise NotImplementedError(
+                    f'Static access info with unhandled scope {self.static_access_info}')
+        else:
+            logger.debug(
+                f'We have no static access info for this scope and symbol "{name}". This probably means that main is a FB call')
 
     def read(self, name: str, index=None):
         if self.variable_iface.symbol_is_static(name):
@@ -189,34 +223,15 @@ class Scope:
             # We need to recursively search up the call stack until we hit the global context at which point we will have
             # reconstructed the name of the symbol in the global symbol table. *This* symbol is the one we need to return so
             # that single static assignment and other such tracking continues to function correctly.
-            logger.info(
-                f'  This scopes static access scope: {self.static_access_info}')
-            if self.static_access_info:
-                scope = self.static_access_info.scope
-                symbol = self.static_access_info.symbol
-                if scope == 'LocalVariable':
-                    logger.debug(
-                        f'LocalVariable scope detected. Deferring resolution to parent scope.')
-                    assert self.parent
-                    # Our symbol is called something different in the parent scope:
-
-                    return self.parent.read(symbol, index)
-                elif scope == 'GlobalVariable':
-                    logger.debug(
-                        f'Global variable found! Search for resolution has terminated!')
-                    # TODO(Jmeyer): Arrange memory scopes into trees!
-                    raise NotImplementedError(
-                        f'Static access to global memory {name}')
-                else:
-                    raise NotImplementedError(
-                        f'Static access info with unhandled scope {self.static_access_info}')
-            else:
-                logger.debug(
-                    f'We have no static access info for this scope and symbol "{name}". This probably means that main is a FB call')
+            return self._resolver_helper(name, index, [], is_read=True)
 
         return self.mem.read(name, index, sort=self.variable_iface.type_of(name))
 
     def write(self, name: str):
+        if self.variable_iface.symbol_is_static(name):
+            logger.info(f'Damn it Jim, "{name}" is a static variable')
+            return self._resolver_helper(name, None, [], is_read=False)
+
         return self.mem.write(name, sort=self.variable_iface.type_of(name))
 
 
