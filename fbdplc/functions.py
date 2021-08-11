@@ -5,6 +5,10 @@ import enum
 import z3
 
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class Program:
     def __init__(self, title: str):
         self.title = title
@@ -58,7 +62,7 @@ class BlockVariables:
             data_section == self.constant
         elif section == Section.RETURN:
             data_section = self.ret
-            assert(len(self.ret) == 0)
+            assert len(self.ret) == 0
         elif section == Section.STATIC:
             data_section = self.statics
         else:
@@ -73,8 +77,17 @@ class BlockVariables:
     def all_variables(self):
         return self.input + self.output + self.inout + self.temp + self.constant + self.ret + self.statics
 
+    def all_local_variables(self):
+        '''
+        inout probably shouldn't be in here; does not include statics
+        '''
+        return self.input + self.output + self.inout + self.temp + self.constant + self.ret
+
     def type_of(self, name):
         return self.__types.get(name)
+
+    def symbol_is_static(self, name):
+        return any([name == x[0] for x in self.statics])
 
 
 class Block:
@@ -101,23 +114,28 @@ class Block:
 
 
 class Scope:
-    def __init__(self, ns: str, uid: str, ctx: z3.Context, block: Block):
+    def __init__(self, ns: str, uid: str, ctx: z3.Context, block: Block, parent=None):
         self.ns = f'{ns}$({uid}){block.name}'
         # A unique identifier for *this* call within the given namespace, 'ns'
         self.uid = uid
         self.name = block.name
         self.variable_iface = block.variables
         self.ctx = ctx
+        self.parent: Scope = parent
+        self.static_access_info = None  # TODO(Jmeyer)
 
         self.mem = MemoryProxy(self.ns, ctx)
-        self._make_variables(ctx)
+        self._make_variables()
 
     def list_variables(self):
         return self.mem.list_variables()
 
-    def _make_variables(self, ctx: z3.Context):
-        for name, vtype in self.variable_iface.all_variables():
+    def _make_variables(self):
+        for name, vtype in self.variable_iface.all_local_variables():
             self.mem.create(name, vtype)
+
+        for name, vtype in self.variable_iface.statics:
+            logger.info(f'Static variable {name} of sort {vtype}')
 
     def link_call(self, part: PartModel):
         assertions = []
@@ -161,7 +179,41 @@ class Scope:
 
         return assertions
 
+    def _resolver_helper(self):
+        pass
+
     def read(self, name: str, index=None):
+        if self.variable_iface.symbol_is_static(name):
+            logger.info(f'Damn it Jim, "{name}" is a static variable')
+            # When this scope was created, the parent knew where the static variables were stored (or at least the next hop).
+            # We need to recursively search up the call stack until we hit the global context at which point we will have
+            # reconstructed the name of the symbol in the global symbol table. *This* symbol is the one we need to return so
+            # that single static assignment and other such tracking continues to function correctly.
+            logger.info(
+                f'  This scopes static access scope: {self.static_access_info}')
+            if self.static_access_info:
+                scope = self.static_access_info.scope
+                symbol = self.static_access_info.symbol
+                if scope == 'LocalVariable':
+                    logger.debug(
+                        f'LocalVariable scope detected. Deferring resolution to parent scope.')
+                    assert self.parent
+                    # Our symbol is called something different in the parent scope:
+
+                    return self.parent.read(symbol, index)
+                elif scope == 'GlobalVariable':
+                    logger.debug(
+                        f'Global variable found! Search for resolution has terminated!')
+                    # TODO(Jmeyer): Arrange memory scopes into trees!
+                    raise NotImplementedError(
+                        f'Static access to global memory {name}')
+                else:
+                    raise NotImplementedError(
+                        f'Static access info with unhandled scope {self.static_access_info}')
+            else:
+                logger.debug(
+                    f'We have no static access info for this scope and symbol "{name}". This probably means that main is a FB call')
+
         return self.mem.read(name, index, sort=self.variable_iface.type_of(name))
 
     def write(self, name: str):

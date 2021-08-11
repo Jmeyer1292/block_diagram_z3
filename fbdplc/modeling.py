@@ -100,6 +100,10 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
     # We can generate function call instances now too.
     logger.debug('--CALLS--')
     for uid, call in code.calls.items():
+        if call.static_memory_access:
+            logger.info(
+                f'Consering call {call} w/ statics = "{call.static_memory_access}"')
+
         next_block = program.blocks[call.target]
 
         # The interface to a function call in THIS scope.
@@ -112,7 +116,10 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         # The act of calling a function creates a new scope in which the block variables
         # associated with that scope are available in the eval of the block and are also
         # connected to the input/output variables.
-        new_scope = Scope(ns, uid, program_model.ctx, next_block)
+        new_scope = Scope(ns, uid, program_model.ctx,
+                          next_block, call_stack[-1])
+        if call.static_memory_access:
+            new_scope.static_access_info = call.static_memory_access
         _model_block(program, program_model, next_block,
                      call_stack + [new_scope])
         link_assertions = new_scope.link_call(model)
