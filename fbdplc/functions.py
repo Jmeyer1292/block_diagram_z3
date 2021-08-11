@@ -194,8 +194,7 @@ class Scope:
                 # Our symbol is called something different in the parent scope:
                 return self.parent._resolver_helper(symbol, index, [name, ] + accesses, is_read)
             elif scope == 'GlobalVariable':
-                helper = '.'.join([a for a in accesses])
-                global_symbol = f'{symbol}.{name}.{helper}'
+                global_symbol = '.'.join([symbol,] + [name,] + accesses)
                 logger.debug(
                     f'Global variable found! Search for resolution has terminated! {global_symbol}')
                 if self.global_mem:

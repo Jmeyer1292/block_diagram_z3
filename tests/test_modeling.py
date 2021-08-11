@@ -375,8 +375,8 @@ def test_fb_block_mycounter():
 
     for i in range(-2, 3):
         exec_and_compare(model,
-                         {'increment': i, 'counter': 0},
-                         {'counter': i}
+                         {'increment': i, '__main.counter': 0},
+                         {'__main.counter': i}
                          )
 
 

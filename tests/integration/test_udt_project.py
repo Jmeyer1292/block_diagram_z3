@@ -17,7 +17,7 @@ def unit_test(program_model: ProgramModel, verbose=True):
                       'ToSafety.sensor_ctrl_b.request_mode': 1,
                       'ToSafety.app.start':  True,
                       'ToSafety.app.stop':  True,
-                      'faults_clear': True},
+                      '__main.faults_clear': True},
                      # Expect
                      {'FromSafety.state.running': False})
 
@@ -25,7 +25,7 @@ def unit_test(program_model: ProgramModel, verbose=True):
     # Stop => Not(running); Note that the 0 in the read of stop indicates we are asking
     # for the initial state. The final state is given by default.
     stop = program_model.global_mem.read('ToSafety.app.stop', 0)
-    running = program_model.root.read('running')
+    running = program_model.global_mem.read('__main.running')
     my_assertion = z3.Implies(stop, z3.Not(running))
 
     proved, counter_example = run_assertions(
@@ -34,6 +34,7 @@ def unit_test(program_model: ProgramModel, verbose=True):
 
     # Run a "cover" to prove a liveness property. Here we try to show that, assuming we
     # are not already running, that "running" is a reachable state.
+    print('READING RUNNING')
     initial_running = program_model.root.read('running', 0)
     proved, example = run_covers(program_model,
                                  # Assume
