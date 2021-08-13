@@ -138,7 +138,8 @@ def _parse_decl(decl: lark.Tree):
         entry['type'] = struct
         # Inline initializer TODO
     else:
-        logger.debug(f'names {names}\ntypes {types}\narrys {arrays}\nstructs{structs}')
+        logger.debug(
+            f'names {names}\ntypes {types}\narrys {arrays}\nstructs{structs}')
         raise NotImplementedError(f'Cant parse line {decl}')
 
     assert entry['name'] is not None
@@ -149,6 +150,7 @@ def _parse_decl(decl: lark.Tree):
 
 
 def _walk_db(tree: lark.Tree):
+    logger.debug(tree.pretty())
     assert len(tree.children) == 1
     block_root = tree.children[0]
     assert block_root.data == "data_block"
@@ -157,11 +159,23 @@ def _walk_db(tree: lark.Tree):
     block_name = block_root.children[0].value
 
     variables = {}
+    interfaces = list(tree.find_data('interface'))
+    assert len(interfaces) == 1
 
-    for vars in tree.find_data('var_block'):
-        for decl in vars.children:
-            x = _parse_decl(decl)
-            variables[x['name']] = x
+    # Each interface is either a type name (TOKEN) or another tree
+    # defininig an adhoc data type.
+    iface_description = interfaces[0].children[0]
+    if isinstance(iface_description, lark.Token):
+        # A token means its a named type
+        variables = iface_description.value
+    elif isinstance(iface_description, lark.Tree):
+        for vars in iface_description.find_data('var_block'):
+            for decl in vars.children:
+                x = _parse_decl(decl)
+                variables[x['name']] = x
+    else:
+        raise RuntimeError(
+            f'Unrecognized iface description type {type(iface_description)}')
 
     initializers = {}
     for inits in tree.find_data('init_block'):
@@ -217,10 +231,12 @@ def parse_db_file(path: str) -> Dict:
     '''
     Returns a dictionary with the following fields:
         'name' : The name of this DB
-        'symbols': A dictionary of name -> Symbol Entry
+        'symbols': ONE OF
+            dict: A dictionary of name -> Symbol Entry representing an adhoc data type
+            str: A named type derived from a UDT or FB static instance
         'initializers': A dictionary of name to initial values
 
-    Each Symbol Entry is itself a dict:
+    If the type of the block is ad-hoc, then each symbol entry in 'symbols' is itself a dict:
         'name' : The symbol name
         'type': The type or "sort" of the symbol
     '''
