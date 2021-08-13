@@ -1,0 +1,10 @@
+DATA_BLOCK "Box"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+"Box"
+
+BEGIN
+   min.x := 0;
+
+END_DATA_BLOCK
