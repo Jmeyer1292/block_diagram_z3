@@ -18,6 +18,7 @@ GRAMMAR = r'''
         |       version
         |       interface
         |       init_block
+        |       name_block  // ???
 
     init_block: "BEGIN" assignment*
     
@@ -26,6 +27,8 @@ GRAMMAR = r'''
     var_block: "VAR" var_decl* "END_VAR"
 
     version: "VERSION :" NUMBER
+
+    name_block: "NAME" ":" NAME
 
     struct_block: "STRUCT"i var_decl* "END_STRUCT"i ";"?
 
