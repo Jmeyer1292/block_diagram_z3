@@ -15,6 +15,10 @@ from fbdplc import sorts
 from fbdplc.sorts import UDTSchema, get_sort_factory, register_udt
 from fbdplc import s7db
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _build_udt(outline, outlines):
     name = outline['name']
@@ -52,29 +56,43 @@ def alloc_anonymous():
 def _process_dbs(db_files, ctx):
     mem = MemoryProxy('', ctx)
     for p in db_files:
+        logger.debug(f'Processing {p}')
         outline = s7db.parse_db_file(p)
         root_name: str = outline['name']
         if root_name[0] == '"':
             root_name = root_name[1:-1]
 
-        for name, entry in outline['symbols'].items():
-            outlined_sort = entry['type']
-            if isinstance(outlined_sort, str):
-                sort = get_sort_factory(outlined_sort)
-            elif isinstance(outlined_sort, dict):
-                # This is an anonymous struct
-                assert 'name' not in outlined_sort
-                udt_proto = {
-                    'name': alloc_anonymous(), 'symbols': outlined_sort}
-                udt = _build_udt(udt_proto, {})
-                register_udt(udt.name, udt)
-                sort = udt
-            else:
-                raise RuntimeError(
-                    f'Unrecognized type in db outline {outlined_sort} {type(outlined_sort)}')
+        symbols = outline['symbols']
 
-            resolved_name = '.'.join([root_name, name])
-            mem.create(resolved_name, sort)
+        # Is the variable interface an ad-hoc data type or a named type?
+        if type(symbols) == dict:
+            # Ad-hoc
+            for name, entry in symbols.items():
+                outlined_sort = entry['type']
+                if isinstance(outlined_sort, str):
+                    sort = get_sort_factory(outlined_sort)
+                elif isinstance(outlined_sort, dict):
+                    # This is an anonymous struct
+                    assert 'name' not in outlined_sort
+                    udt_proto = {
+                        'name': alloc_anonymous(), 'symbols': outlined_sort}
+                    udt = _build_udt(udt_proto, {})
+                    register_udt(udt.name, udt)
+                    sort = udt
+                else:
+                    raise RuntimeError(
+                        f'Unrecognized type in db outline {outlined_sort} {type(outlined_sort)}')
+
+                resolved_name = '.'.join([root_name, name])
+                mem.create(resolved_name, sort)
+        elif type(symbols) == str:
+            # Named
+            logger.debug(f'Allocating a named type {type(symbols)} {symbols}')
+            sort_factory = get_sort_factory(symbols)
+            mem.create(root_name, sort_factory)
+        else:
+            raise AssertionError(
+                f'Bruh, the symbols variable needs to be either a str or dict, not {type(symbols)}')
 
     return mem
 
