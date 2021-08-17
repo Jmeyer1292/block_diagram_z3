@@ -118,6 +118,7 @@ def _model_block(program: Program, program_model: ProgramModel, block: Block, ca
         # connected to the input/output variables.
         new_scope = Scope(ns, uid, program_model.ctx,
                           next_block, call_stack[-1])
+        new_scope.global_mem = call_stack[-1].global_mem
         if call.static_memory_access:
             new_scope.static_access_info = call.static_memory_access
         _model_block(program, program_model, next_block,
