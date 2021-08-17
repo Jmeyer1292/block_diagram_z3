@@ -14,6 +14,7 @@ class Program:
         self.title = title
         self.blocks = {}
         self.entry = 'main'
+        self.entry_point_db = None
 
 
 class Section(enum.Enum):

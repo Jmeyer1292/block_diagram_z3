@@ -8,11 +8,11 @@ The function build_program_model() is the primary entry point to this module.
 from fbdplc.s7xml import parse_static_interface_from_file, parse_tags_from_file
 from fbdplc.modeling import ProgramModel, program_model
 from fbdplc.apps import parse_s7xml
-from fbdplc.functions import Program
+from fbdplc.functions import Block, Program
 from z3 import z3
 from fbdplc.graph import MemoryProxy
 from fbdplc import sorts
-from fbdplc.sorts import UDTSchema, get_sort_factory, register_udt
+from fbdplc.sorts import UDTInstance, UDTSchema, get_sort_factory, register_udt
 from fbdplc import s7db
 
 import logging
@@ -161,6 +161,13 @@ class ProjectContext:
         # The default here is the the name of the automatically generated TIA portal
         # safety task entry point.
         self.entry_point = 'Main_Safety_RTG1'
+        # If your entry point routine is a block of type FB, meaning it has static data
+        # associated with it, then you can additionally specify the name of the global
+        # DB that backs it. If its not specified, then:
+        #   1. The project will look for a db with the name f'{entry_point}_DB' and use
+        #      that if it exists. Otherwise,
+        #   2. A global symbol, '__main' with the type of your FB will be allocated.
+        self.entry_point_db = None
 
 
 def build_program_model(project: ProjectContext) -> ProgramModel:
@@ -194,5 +201,48 @@ def build_program_model(project: ProjectContext) -> ProgramModel:
     for f in project.fb_srcs:
         block = parse_s7xml.parse_function_from_file(f)
         program.blocks[block.name] = block
+
     program.entry = project.entry_point
+    program.entry_point_db = project.entry_point_db
+
+    program.entry_point_db = resolve_entry_point_db(mem, program)
+
     return program_model(program, context=ctx, global_memory=mem)
+
+
+def resolve_entry_point_db(mem: MemoryProxy, program: Program) -> str:
+    entry_block = program.blocks[program.entry]
+    entry_is_fb = entry_block.block_type == Block.BLOCK_TYPE_FB
+
+    if not entry_is_fb:
+        return ''
+
+    fb_udt_name = f'"{entry_block.name}"'
+    # If the user did not specify an entry_db, then first try to locate a suitable one,
+    # and, failing that, use a special new one.
+    if program.entry_point_db:
+        logger.debug(
+            f'User specified entry = {program.entry} and entry db = {program.entry_point_db}')
+        # Force an assert
+        mem.read(program.program_entry_db)
+        return program.entry_point_db
+    else:
+        logger.debug(
+            f'User did not specify an entry DB for entry = {program.entry}')
+        # Rule #1: Is there a global memory object with the name and sort of the entry point?
+        expected = f'{entry_block.name}_DB'
+        try:
+            r = mem.read(expected)
+        except AssertionError as e:
+            r = None
+
+        if isinstance(r, UDTInstance) and r.schema.name == fb_udt_name:
+            logger.warning(
+                f'An entry point with static data did not have a "entry_point_db" specified. Automatically assuming global memory db "{expected}" backs this entry point.')
+            return expected
+        # Rule #2: Create a special entry point variable
+        fb_sort = get_sort_factory(fb_udt_name)
+        mem.create('__main', fb_sort)
+        logger.warning(
+            f'An entry point with static data did not have a "entry_point_db" specified and no similarly named DB could be located. Creating "__main" to back these statics.')
+        return '__main'
