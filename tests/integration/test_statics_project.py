@@ -1,15 +1,32 @@
 import z3
 from fbdplc.modeling import ProgramModel
-from fbdplc.analysis import exec_and_compare, run_assertions, run_covers, symbolic_execution
+from fbdplc.analysis import exec_and_compare
 import fbdplc.project
 
 import glob
 
 
-def unit_test(program_model: ProgramModel, verbose=True):
-    solver, model = symbolic_execution(
-        program_model, {'MyCounter_DB0.counter': 0, 'MyCounter_DB1.counter': 0})
-    print(model)
+def unit_test(program_model: ProgramModel):
+    inputs = {}
+    outputs = {}
+
+    # Test Case #1: invoking MyCounter_DB directly!
+    #   Invoke MyCounter_DB0 twice with 1 and 2 respectively
+    #   Invoke MyCounter_DB1 once with 3
+    inputs['MyCounter_DB0.counter'] = 0
+    inputs['MyCounter_DB1.counter'] = 0
+    outputs['MyCounter_DB0.counter'] = 3
+    outputs['MyCounter_DB1.counter'] = 3
+
+    # Test Case #2: BlockIncrementer_DB invoked twice in a row
+    #   Each invocation: .a += 1 + 2, .b += 1 + 3
+    inputs['BlockIncrementer_DB.a.counter'] = 0
+    inputs['BlockIncrementer_DB.b.counter'] = 0
+    outputs['BlockIncrementer_DB.a.counter'] = 6
+    outputs['BlockIncrementer_DB.b.counter'] = 8
+
+    exec_and_compare(program_model, inputs, outputs)
+
 
 def main():
     project = fbdplc.project.ProjectContext()
