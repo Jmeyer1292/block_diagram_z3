@@ -32,7 +32,7 @@ GRAMMAR = r'''
 
     struct_block: "STRUCT"i var_decl* "END_STRUCT"i ";"?
 
-    var_decl: NAME property? ":" sort inline_assign? ";"
+    var_decl: (NAME | ESCAPED_STRING) property? ":" sort inline_assign? ";"
 
     ?sort: TYPE | struct_block | array_block
 
@@ -106,7 +106,7 @@ def _parse_decl(decl: lark.Tree):
 
     entry = {'name': None, 'type': None, 'kind': None}
 
-    def pred_names(x): return isinstance(x, lark.Token) and x.type == 'NAME'
+    def pred_names(x): return isinstance(x, lark.Token) and (x.type == 'NAME' or x.type == 'ESCAPED_STRING')
     def pred_types(x): return isinstance(x, lark.Token) and x.type == 'TYPE'
 
     def pred_array(x): return isinstance(

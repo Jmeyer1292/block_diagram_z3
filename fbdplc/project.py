@@ -96,13 +96,18 @@ def _process_dbs(db_files, ctx):
 
     return mem
 
-
+DEBUG_CONTINUE = True
 def _build_udts(udt_files):
     outlines = {}
     for f in udt_files:
-        udt_outline = s7db.parse_udt_file(f)
-        outlines[udt_outline['name']] = udt_outline
-
+        logger.debug(f'Considering UDT file {f}')
+        try:
+            udt_outline = s7db.parse_udt_file(f)
+            outlines[udt_outline['name']] = udt_outline
+        except Exception as e:
+            logger.exception(e)
+            if not DEBUG_CONTINUE:
+                raise
     # Transform these outlines into UDTSchemas, make sure we have definitions for everything,
     # and register them.
     for _, outline in outlines.items():
