@@ -128,6 +128,7 @@ def _build_fb_udts(function_files):
 def process_tags(tag_files, mem: MemoryProxy):
     symbols = []
     for f in tag_files:
+        logger.debug(f'Considering tag file {f}')
         tag_table_name, tag_table_symbols = parse_tags_from_file(f)
         symbols.extend(tag_table_symbols)
 

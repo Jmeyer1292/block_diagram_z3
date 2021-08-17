@@ -188,6 +188,36 @@ def parse_function_block_interface(root: etree._Element) -> BlockVariables:
     return block
 
 
+def _parse_function_block_interface_no_resolves(root: etree._Element) -> BlockVariables:
+    # Variables
+    iface_node = [l for l in root.iter('Interface')]
+    assert len(iface_node) == 1
+    iface_node = iface_node[0]
+
+    TAG_MAP = {
+        'Input': Section.INPUT,
+        'Output': Section.OUTPUT,
+        'InOut': Section.INOUT,
+        'Temp': Section.TEMP,
+        'Constant': Section.CONSTANT,
+        'Return': Section.RETURN,
+        'Static': Section.STATIC,
+    }
+
+    block = BlockVariables()
+    for section in iface_node[0]:
+        section_name = section.get('Name')
+        section_enum = TAG_MAP[section_name]
+
+        for member in section:
+            n = member.get('Name')
+            datatype: str = member.get('Datatype')
+            if datatype == 'Void':
+                continue
+            block.add(section_enum, n, datatype)
+    return block
+
+
 def parse_block_type(root: etree._Element):
     BLOCK_TYPE_MAP = {
         'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
@@ -215,9 +245,23 @@ def parse_static_interface(root: etree._Element):
     if parse_block_type(root) != Block.BLOCK_TYPE_FB:
         return None
 
-    block = parse_function_block_interface(root)
+    block = _parse_function_block_interface_no_resolves(root)
     logger.info(f'FB block has interface: {block}')
-    return None
+
+    # I want to convert the static portion of the variable interface into an intermediate dictionary
+    # description of a UDT that can be consumed by the project parsing infrastructure.
+    # See parse_db_file() in s7db.py for a description of the format.
+    outline = {}
+
+    name = list(root.iter('Name'))[0].text
+    outline['name'] = f'"{name}"'
+
+    outline['symbols'] = {
+        varname: {'name': varname, 'type': varsort} for varname, varsort in block.statics}
+
+    # TODO(Jmeyer): Initializers
+    outline['initializers'] = {}
+    return outline
 
 
 def parse_call(node: etree._Element, ns: str):
@@ -498,6 +542,9 @@ def parse_tag_block(root: etree._Element):
     obj_list = root.find('ObjectList')
     name_attr = list(root.iter('AttributeList'))[0][0]
     assert name_attr.tag == 'Name'
+
+    if obj_list is None:
+        return name_attr.text, []
 
     handlers = {
         'SW.Tags.PlcUserConstant': _parse_tag_plcuserconstant,
