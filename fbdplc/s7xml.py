@@ -4,7 +4,7 @@ program and parse it into its constituent graphs composed of parts and wires.
 '''
 
 from fbdplc.sorts import Boolean, Integer, SORT_MAP, Time, make_schema
-from fbdplc.functions import Block, Call, Section
+from fbdplc.functions import Block, BlockVariables, Call, Section
 from fbdplc.utils import namespace
 from typing import List
 from lxml import etree
@@ -147,18 +147,7 @@ def parse_udt(member_node: etree._Element):
     return make_schema(root_datatype, fields)
 
 
-def parse_function_block(root: etree._Element):
-
-    BLOCK_TYPE_MAP = {
-        'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
-        'SW.Blocks.FC': Block.BLOCK_TYPE_FC,
-    }
-
-    name_node = root.iter('Name')
-    block_name = list(name_node)[0].text
-    block_type = BLOCK_TYPE_MAP[root.tag]
-    block = Block(block_name, block_type=block_type)
-
+def parse_function_block_interface(root: etree._Element) -> BlockVariables:
     # Variables
     iface_node = [l for l in root.iter('Interface')]
     assert(len(iface_node) == 1)
@@ -174,6 +163,7 @@ def parse_function_block(root: etree._Element):
         'Static': Section.STATIC,
     }
 
+    block = BlockVariables()
     for section in iface_node[0]:
         section_name = section.get('Name')
         section_enum = TAG_MAP[section_name]
@@ -188,12 +178,34 @@ def parse_function_block(root: etree._Element):
                 logger.debug(
                     f'{n} has a custom data structure of type {datatype}')
                 udt = parse_udt(member)
-                block.variables.add(section_enum, n, udt)
+                block.add(section_enum, n, udt)
             else:
-                block.variables.add(section_enum, n, SORT_MAP[datatype])
+                block.add(section_enum, n, SORT_MAP[datatype])
+    return block
 
+
+def parse_function_block(root: etree._Element):
+
+    BLOCK_TYPE_MAP = {
+        'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
+        'SW.Blocks.FC': Block.BLOCK_TYPE_FC,
+    }
+
+    name_node = root.iter('Name')
+    block_name = list(name_node)[0].text
+    block_type = BLOCK_TYPE_MAP[root.tag]
+    block = Block(block_name, block_type=block_type)
+
+    block.variables = parse_function_block_interface(root)
     block.networks = discover_networks(root)
     return block
+
+
+def parse_static_interface(node: etree._Element):
+    '''
+    node should be a reference to the root of a FB
+    '''
+    pass
 
 
 def parse_call(node: etree._Element, ns: str):

@@ -109,6 +109,21 @@ def _build_udts(udt_files):
         _build_udt(outline, outlines)
 
 
+def _build_fb_udts(function_files):
+    '''
+    Some function blocks, those labeled as "FB", may contain static data that implicitly forms a UDT with
+    the name of the block.
+    '''
+    outlines = {}
+    for f in function_files:
+        static_iface = parse_static_interface(f)
+        if static_iface:
+            outlines[static_iface['name']] = static_iface
+
+    for iface in outlines.values():
+        _build_udt(iface, outlines)
+
+
 def process_tags(tag_files, mem: MemoryProxy):
     symbols = []
     for f in tag_files:
@@ -162,6 +177,8 @@ def build_program_model(project: ProjectContext) -> ProgramModel:
     # step populates the g_udt_archive in the sorts module and is therefore not threadsafe. It is a
     # TODO(Jmeyer) to clean this up.
     _build_udts(project.udt_srcs)
+
+    _build_fb_udts(project.fb_srcs)
 
     # Loop through the data blocks (global variables) and build up the symbol table:
     ctx = z3.Context()
