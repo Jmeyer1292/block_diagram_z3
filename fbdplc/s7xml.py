@@ -101,13 +101,17 @@ def parse_access(node, ns: str):
         raise ValueError(f'Unimplemented scope for Access, "{scope}"')
 
 
-def parse_block(tree: etree._ElementTree) -> Block:
+def _extract_singular_block_element(tree: etree._ElementTree):
     root = tree.getroot()
-    assert(root.tag == 'Document')
-    BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB']
+    assert root.tag == 'Document'
+    BLOCK_TAGS = ['SW.Blocks.FC', 'SW.Blocks.FB', 'SW.Blocks.OB']
     block_node = [b for b in root if b.tag in BLOCK_TAGS]
     assert len(block_node) == 1, f'Tree {tree} has {len(block_node)} != 1'
-    return parse_function_block(block_node[0])
+    return block_node[0]
+
+
+def parse_block(tree: etree._ElementTree) -> Block:
+    return parse_function_block(_extract_singular_block_element(tree))
 
 
 def parse_udt(member_node: etree._Element):
@@ -184,16 +188,19 @@ def parse_function_block_interface(root: etree._Element) -> BlockVariables:
     return block
 
 
-def parse_function_block(root: etree._Element):
-
+def parse_block_type(root: etree._Element):
     BLOCK_TYPE_MAP = {
         'SW.Blocks.FB': Block.BLOCK_TYPE_FB,
         'SW.Blocks.FC': Block.BLOCK_TYPE_FC,
+        'SW.Blocks.OB': Block.BLOCK_TYPE_OB,
     }
+    return BLOCK_TYPE_MAP[root.tag]
 
+
+def parse_function_block(root: etree._Element):
     name_node = root.iter('Name')
     block_name = list(name_node)[0].text
-    block_type = BLOCK_TYPE_MAP[root.tag]
+    block_type = parse_block_type(root)
     block = Block(block_name, block_type=block_type)
 
     block.variables = parse_function_block_interface(root)
@@ -201,11 +208,16 @@ def parse_function_block(root: etree._Element):
     return block
 
 
-def parse_static_interface(node: etree._Element):
+def parse_static_interface(root: etree._Element):
     '''
     node should be a reference to the root of a FB
     '''
-    pass
+    if parse_block_type(root) != Block.BLOCK_TYPE_FB:
+        return None
+
+    block = parse_function_block_interface(root)
+    logger.info(f'FB block has interface: {block}')
+    return None
 
 
 def parse_call(node: etree._Element, ns: str):
@@ -439,6 +451,13 @@ def parse_function_from_file(path: str) -> Block:
 def parse_function_from_text(path: str) -> Block:
     tree: etree._ElementTree = etree.fromstring(path)
     return parse_block(_remove_namespaces(tree))
+
+
+def parse_static_interface_from_file(path: str):
+    tree: etree._ElementTree = etree.parse(path)
+    return parse_static_interface(
+        _extract_singular_block_element(
+            _remove_namespaces(tree)))
 
 
 def part_attributes(node):

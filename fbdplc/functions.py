@@ -45,8 +45,9 @@ class BlockVariables:
         temp = ','.join([f'({s[0]}, {s[1]})' for s in self.temp])
         constant = ','.join([f'({s[0]}, {s[1]})' for s in self.constant])
         ret = ','.join([f'({s[0]}, {s[1]})' for s in self.ret])
+        statics = ','.join([f'({s[0]}, {s[1]})' for s in self.statics])
 
-        return f'VarBlock(\n\tinputs={input}\n\toutput={output}\n\tinout={inout}\n\ttemp={temp}\n\tconstant={constant}\n\tret={ret}\n)'
+        return f'VarBlock(\n\tinputs={input}\n\toutput={output}\n\tinout={inout}\n\ttemp={temp}\n\tconstant={constant}\n\tret={ret}\n\tstatics={statics}\n)'
 
     def add(self, section: Section, name: str, datatype: type):
         data_section = None
@@ -98,6 +99,7 @@ class Block:
     '''
     BLOCK_TYPE_FC = 'FC'
     BLOCK_TYPE_FB = 'FB'
+    BLOCK_TYPE_OB = 'OB'
 
     def __init__(self, name: str, block_type: str = BLOCK_TYPE_FC):
         pass
@@ -123,7 +125,7 @@ class Scope:
         self.ctx = ctx
         self.parent: Scope = parent
         self.static_access_info = None  # TODO(Jmeyer)
-        self.global_mem = None # TODO(Jmeyer)
+        self.global_mem = None  # TODO(Jmeyer)
 
         self.mem = MemoryProxy(self.ns, ctx)
         self._make_variables()
@@ -194,7 +196,7 @@ class Scope:
                 # Our symbol is called something different in the parent scope:
                 return self.parent._resolver_helper(symbol, index, [name, ] + accesses, is_read)
             elif scope == 'GlobalVariable':
-                global_symbol = '.'.join([symbol,] + [name,] + accesses)
+                global_symbol = '.'.join([symbol, ] + [name, ] + accesses)
                 logger.debug(
                     f'Global variable found! Search for resolution has terminated! {global_symbol}')
                 if self.global_mem:

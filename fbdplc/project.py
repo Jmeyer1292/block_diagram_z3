@@ -5,7 +5,7 @@ safety project.
 The function build_program_model() is the primary entry point to this module. 
 '''
 
-from fbdplc.s7xml import parse_tags_from_file
+from fbdplc.s7xml import parse_static_interface_from_file, parse_tags_from_file
 from fbdplc.modeling import ProgramModel, program_model
 from fbdplc.apps import parse_s7xml
 from fbdplc.functions import Program
@@ -116,7 +116,8 @@ def _build_fb_udts(function_files):
     '''
     outlines = {}
     for f in function_files:
-        static_iface = parse_static_interface(f)
+        logger.debug(f'Considering block file {f}')
+        static_iface = parse_static_interface_from_file(f)
         if static_iface:
             outlines[static_iface['name']] = static_iface
 
