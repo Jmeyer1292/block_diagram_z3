@@ -1,14 +1,15 @@
 import z3
 from fbdplc.modeling import ProgramModel
-from fbdplc.analysis import exec_and_compare, run_assertions, run_covers
+from fbdplc.analysis import exec_and_compare, run_assertions, run_covers, symbolic_execution
 import fbdplc.project
 
 import glob
 
 
 def unit_test(program_model: ProgramModel, verbose=True):
-    pass
-
+    solver, model = symbolic_execution(
+        program_model, {'MyCounter_DB0.counter': 0, 'MyCounter_DB1.counter': 0})
+    print(model)
 
 def main():
     project = fbdplc.project.ProjectContext()
