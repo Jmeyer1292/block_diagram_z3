@@ -274,7 +274,7 @@ def resolve_entry_point_db(mem: MemoryProxy, program: Program) -> str:
             return expected
         # Rule #2: Create a special entry point variable
         fb_sort = get_sort_factory(fb_udt_name)
-        mem.create('__main', fb_sort)
         logger.warning(
             f'An entry point with static data did not have a "entry_point_db" specified and no similarly named DB could be located. Creating "__main" to back these statics.')
+        mem.create('__main', fb_sort)
         return '__main'

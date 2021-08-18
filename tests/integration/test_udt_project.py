@@ -17,7 +17,7 @@ def unit_test(program_model: ProgramModel, verbose=True):
                       'ToSafety.sensor_ctrl_b.request_mode': 1,
                       'ToSafety.app.start':  True,
                       'ToSafety.app.stop':  True,
-                      '__main.faults_clear': True},
+                      'faults_clear': True},
                      # Expect
                      {'FromSafety.state.running': False})
 

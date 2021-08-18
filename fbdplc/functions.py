@@ -138,9 +138,6 @@ class Scope:
         for name, vtype in self.variable_iface.all_local_variables():
             self.mem.create(name, vtype)
 
-        for name, vtype in self.variable_iface.statics:
-            logger.info(f'Static variable {name} of sort {vtype}')
-
     def link_call(self, part: PartModel):
         assertions = []
 

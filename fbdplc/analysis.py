@@ -15,13 +15,16 @@ def symbolic_execution(program: modeling.ProgramModel, inputs) -> Tuple[z3.Solve
     input_constraints = []
     for key, value in inputs.items():
         # Is this variable in the local scope or global memory?
-        v = None
-        if key in program.root.mem.list_variables():
-            # local scope:
+        try:
             v = program.root.read(key, 0)
-        else:
-            # global: will assert if key is not in global_mem
+        except AssertionError as e:
             v = program.global_mem.read(key, 0)
+        # if key in program.root.mem.list_variables():
+            # local scope:
+            # v = program.root.read(key, 0)
+        # else:
+            # global: will assert if key is not in global_mem
+            # v = program.global_mem.read(key, 0)
         input_constraints.append(v == value)
 
     solver.push()
