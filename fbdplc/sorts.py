@@ -37,7 +37,7 @@ class AnyType:
 SORT_MAP = {
     'Bool': Boolean,
     'Int': Integer,
-    'Word': Integer, # TODO(Jmeyer)
+    'Word': Integer,  # TODO(Jmeyer)
     'Time': Time  # ???
 }
 
@@ -136,3 +136,11 @@ def get_sort_factory(name):
     if name in g_udt_archive:
         return g_udt_archive[name]
     raise RuntimeError(f'Sort "{name}" not known')
+
+
+def clear_archive():
+    '''
+    Remove registered types in the singleton archive. This will be refactored shortly, but I want
+    to make some room for getting real feedback outside of this.
+    '''
+    g_udt_archive.clear()

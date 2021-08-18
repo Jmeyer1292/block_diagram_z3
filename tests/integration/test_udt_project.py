@@ -1,3 +1,4 @@
+from fbdplc.sorts import clear_archive
 import z3
 from fbdplc.modeling import ProgramModel
 from fbdplc.analysis import exec_and_compare, run_assertions, run_covers
@@ -64,4 +65,5 @@ def main():
 
 
 def test():
+    clear_archive()
     main()
