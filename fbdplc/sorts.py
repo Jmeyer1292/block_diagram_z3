@@ -11,6 +11,12 @@ class Integer:
         return z3.BitVec(name, 16, ctx=ctx)
 
 
+class ShortInteger:
+    @staticmethod
+    def make(name: str, ctx: z3.Context):
+        return z3.BitVec(name, 8, ctx=ctx)
+
+
 class Boolean:
     @staticmethod
     def make(name: str, ctx: z3.Context):
@@ -31,6 +37,7 @@ class AnyType:
 SORT_MAP = {
     'Bool': Boolean,
     'Int': Integer,
+    'Word': Integer, # TODO(Jmeyer)
     'Time': Time  # ???
 }
 

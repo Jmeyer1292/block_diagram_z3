@@ -257,7 +257,7 @@ def parse_static_interface(root: etree._Element):
     outline['name'] = f'"{name}"'
 
     outline['symbols'] = {
-        varname: {'name': varname, 'type': varsort} for varname, varsort in block.statics}
+        varname: {'name': varname, 'type': varsort, 'kind': 'named'} for varname, varsort in block.statics}
 
     # TODO(Jmeyer): Initializers
     outline['initializers'] = {}

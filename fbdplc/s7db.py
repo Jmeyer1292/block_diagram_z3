@@ -56,6 +56,7 @@ GRAMMAR = r'''
            | SINGLE_QUOTE_STR
            | inline_array
            | NAME
+           | SIGNED_FLOAT
 
     inline_array: "[" (literal ","?)+ "]"
 
@@ -63,6 +64,7 @@ GRAMMAR = r'''
 
     SUBSCRIPT: "[" DIGIT+ "]"
 
+    %import common.SIGNED_FLOAT
     %import common.ESCAPED_STRING
     %import common.CNAME -> NAME
     %import common.LETTER

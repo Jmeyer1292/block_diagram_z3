@@ -20,16 +20,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class NotSupportedException(Exception):
+    pass
+
+
 def _build_udt(outline, outlines):
     name = outline['name']
+    logger.debug(f'Constructing UDT {name}')
     if name in sorts.g_udt_archive:
         return sorts.g_udt_archive[name]
 
     schema = UDTSchema(name)
     symbols = outline['symbols']
+    logger.debug(f'Symbols for {name}: {symbols}')
     for s in symbols.values():
         sort = s['type']
         name = s['name']
+        kind = s['kind']
+
+        if kind == 'array':
+            raise NotSupportedException()
+
         if sort in sorts.SORT_MAP:
             # Primitive
             schema.fields[name] = sorts.SORT_MAP[sort]
@@ -57,46 +68,53 @@ def _process_dbs(db_files, ctx):
     mem = MemoryProxy('', ctx)
     for p in db_files:
         logger.debug(f'Processing {p}')
-        outline = s7db.parse_db_file(p)
-        root_name: str = outline['name']
-        if root_name[0] == '"':
-            root_name = root_name[1:-1]
+        try:
+            outline = s7db.parse_db_file(p)
+            root_name: str = outline['name']
+            if root_name[0] == '"':
+                root_name = root_name[1:-1]
 
-        symbols = outline['symbols']
+            symbols = outline['symbols']
 
-        # Is the variable interface an ad-hoc data type or a named type?
-        if type(symbols) == dict:
-            # Ad-hoc
-            for name, entry in symbols.items():
-                outlined_sort = entry['type']
-                if isinstance(outlined_sort, str):
-                    sort = get_sort_factory(outlined_sort)
-                elif isinstance(outlined_sort, dict):
-                    # This is an anonymous struct
-                    assert 'name' not in outlined_sort
-                    udt_proto = {
-                        'name': alloc_anonymous(), 'symbols': outlined_sort}
-                    udt = _build_udt(udt_proto, {})
-                    register_udt(udt.name, udt)
-                    sort = udt
-                else:
-                    raise RuntimeError(
-                        f'Unrecognized type in db outline {outlined_sort} {type(outlined_sort)}')
+            # Is the variable interface an ad-hoc data type or a named type?
+            if type(symbols) == dict:
+                # Ad-hoc
+                for name, entry in symbols.items():
+                    outlined_sort = entry['type']
+                    if isinstance(outlined_sort, str):
+                        sort = get_sort_factory(outlined_sort)
+                    elif isinstance(outlined_sort, dict):
+                        # This is an anonymous struct
+                        assert 'name' not in outlined_sort
+                        udt_proto = {
+                            'name': alloc_anonymous(), 'symbols': outlined_sort}
+                        udt = _build_udt(udt_proto, {})
+                        register_udt(udt.name, udt)
+                        sort = udt
+                    else:
+                        raise RuntimeError(
+                            f'Unrecognized type in db outline {outlined_sort} {type(outlined_sort)}')
 
-                resolved_name = '.'.join([root_name, name])
-                mem.create(resolved_name, sort)
-        elif type(symbols) == str:
-            # Named
-            logger.debug(f'Allocating a named type {type(symbols)} {symbols}')
-            sort_factory = get_sort_factory(symbols)
-            mem.create(root_name, sort_factory)
-        else:
-            raise AssertionError(
-                f'Bruh, the symbols variable needs to be either a str or dict, not {type(symbols)}')
-
+                    resolved_name = '.'.join([root_name, name])
+                    mem.create(resolved_name, sort)
+            elif type(symbols) == str:
+                # Named
+                logger.debug(
+                    f'Allocating a named type {type(symbols)} {symbols}')
+                sort_factory = get_sort_factory(symbols)
+                mem.create(root_name, sort_factory)
+            else:
+                raise AssertionError(
+                    f'Bruh, the symbols variable needs to be either a str or dict, not {type(symbols)}')
+        except Exception as e:
+            logger.warning(f'Unable to parse {p}: {e}')
+            logger.debug(f'An exception occurred: {e}', exc_info=True)
     return mem
 
+
 DEBUG_CONTINUE = True
+
+
 def _build_udts(udt_files):
     outlines = {}
     for f in udt_files:
@@ -111,7 +129,12 @@ def _build_udts(udt_files):
     # Transform these outlines into UDTSchemas, make sure we have definitions for everything,
     # and register them.
     for _, outline in outlines.items():
-        _build_udt(outline, outlines)
+        name = outline['name']
+        logger.debug(f'Processing {name}')
+        try:
+            _build_udt(outline, outlines)
+        except (NotSupportedException, KeyError) as e:
+            logger.warning(f'Unable to parse {name}, {e}')
 
 
 def _build_fb_udts(function_files):
@@ -140,8 +163,12 @@ def process_tags(tag_files, mem: MemoryProxy):
     for entry in symbols:
         name = entry[0]
         sort_text = entry[1]
-        sort = get_sort_factory(sort_text)
-        mem.create(name, sort)
+        try:
+            sort = get_sort_factory(sort_text)
+            mem.create(name, sort)
+        except Exception as e:
+            logger.warning(f'Unable to create {sort_text}. Skipping.')
+            logger.debug(e, exc_info=True)
 
 
 class ProjectContext:
