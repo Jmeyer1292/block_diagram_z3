@@ -1,34 +1,24 @@
-import sys
 from fbdplc.functions import Program
 from fbdplc.s7xml import parse_function_from_file, parse_tags_from_file
 from fbdplc.modeling import program_model
-import argparse
+import fbdplc.apps.loggers as loggers
 
-import logging
+import argparse
+import sys
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('paths', nargs='*')
     parser.add_argument('--show_model', action='store_true')
     parser.add_argument('--tags', action='store_true')
-    parser.add_argument('--v', type=str, default='')
+    loggers.add_log_arguments(parser)
     return parser.parse_args()
 
-def configure_logger(args):
-    if not args.v:
-        return
-    logger = logging.getLogger('fbdplc')
-    logger.setLevel(args.v)
-    handler = logging.StreamHandler()
-    FORMAT = '%(asctime)s:%(filename)s:%(lineno)d:%(levelname)s: %(message)s'
-    handler.setFormatter(logging.Formatter(FORMAT))
-    handler.setLevel(args.v)
-    logger.addHandler(handler)
 
 if __name__ == '__main__':
     args = parse_args()
-
-    configure_logger(args)
+    loggers.configure_logger(args)
 
     if args.tags:
         for p in args.paths:

@@ -1,11 +1,11 @@
 
+import logging
 from fbdplc.analysis import _memory_dict, run_assertions
 from fbdplc.s7xml import parse_function_from_file
 from fbdplc.functions import Program
 from fbdplc.modeling import program_model
 import z3
 
-import logging
 logging.basicConfig()
 logging.getLogger('fbdplc').setLevel(logging.INFO)
 

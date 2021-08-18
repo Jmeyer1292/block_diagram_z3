@@ -1,34 +1,21 @@
 import argparse
 import fbdplc.s7db
 import pprint
-
-import logging
+import fbdplc.apps.loggers as loggers
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('paths', nargs='*')
-    parser.add_argument('--v', type=str, default='')
     parser.add_argument(
         '--parser', choices=['guess', 'db', 'udt'], default='guess')
+    loggers.add_log_arguments(parser)
     return parser.parse_args()
-
-
-def configure_logger(args):
-    if not args.v:
-        return
-    logger = logging.getLogger('fbdplc')
-    logger.setLevel(args.v)
-    handler = logging.StreamHandler()
-    FORMAT = '%(asctime)s:%(filename)s:%(lineno)d:%(levelname)s: %(message)s'
-    handler.setFormatter(logging.Formatter(FORMAT))
-    handler.setLevel(args.v)
-    logger.addHandler(handler)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    configure_logger(args)
+    loggers.configure_logger(args)
 
     ACTIONS = {
         'db': fbdplc.s7db.parse_db_file,
