@@ -59,7 +59,7 @@ class MemoryProxy:
         # Create the root of the new type and everything under it:
         self.tree[name] = sort
         if is_primitive(sort):
-            logger.info(f'Creating primitive "{name}" of sort "{sort}"')
+            logger.debug(f'Creating primitive "{name}" of sort "{sort}"')
             self.__create(name, sort, unique=unique)
         else:
             for child_name, child_sort in children(sort):
@@ -68,8 +68,6 @@ class MemoryProxy:
     def create(self, name: str, sort, unique=True):
         # Mem is kept as a tree
         tree_levels = name.split('.')
-        logger.debug(f'Access levels: {tree_levels}')
-
         # Create any access levels above the variable being created
         for i in range(len(tree_levels) - 1):
             level = '.'.join(tree_levels[0: i + 1])
@@ -83,7 +81,7 @@ class MemoryProxy:
                     logger.debug(
                         f'Creating new level {level} of known sort {sort}')
                 else:
-                    logger.warning(
+                    logger.debug(
                         f'Creating new level {level} with UNKNOWN sort')
 
                 this_sort = sort if has_sort else None

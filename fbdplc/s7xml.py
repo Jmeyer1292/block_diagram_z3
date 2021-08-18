@@ -246,7 +246,6 @@ def parse_static_interface(root: etree._Element):
         return None
 
     block = _parse_function_block_interface_no_resolves(root)
-    logger.info(f'FB block has interface: {block}')
 
     # I want to convert the static portion of the variable interface into an intermediate dictionary
     # description of a UDT that can be consumed by the project parsing infrastructure.

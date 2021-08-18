@@ -183,8 +183,6 @@ class Scope:
     def _resolver_helper(self, name: str, index, accesses, is_read):
         scope = self.static_access_info.scope
         symbol = self.static_access_info.symbol
-        logger.info(
-            f'  This scopes static access scope: {self.static_access_info}')
         if self.static_access_info:
 
             if scope == 'LocalVariable':
@@ -202,7 +200,6 @@ class Scope:
                         v = self.global_mem.read(global_symbol, index)
                     else:
                         v = self.global_mem.write(global_symbol)
-                    logger.info(f'  RESOLVED TO {v}')
                     return v
                 else:
                     # TODO(Jmeyer): Arrange memory scopes into trees!
@@ -217,7 +214,6 @@ class Scope:
 
     def read(self, name: str, index=None):
         if self.variable_iface.symbol_is_static(name):
-            logger.info(f'Damn it Jim, "{name}" is a static variable')
             # When this scope was created, the parent knew where the static variables were stored (or at least the next hop).
             # We need to recursively search up the call stack until we hit the global context at which point we will have
             # reconstructed the name of the symbol in the global symbol table. *This* symbol is the one we need to return so
@@ -228,7 +224,6 @@ class Scope:
 
     def write(self, name: str):
         if self.variable_iface.symbol_is_static(name):
-            logger.info(f'Damn it Jim, "{name}" is a static variable')
             return self._resolver_helper(name, None, [], is_read=False)
 
         return self.mem.write(name, sort=self.variable_iface.type_of(name))
