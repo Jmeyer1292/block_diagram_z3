@@ -83,7 +83,9 @@ def main():
 
 ## Warnings
 
-This is an experimental project meant largely as a proof-of-concept. It ***SHOULD NOT*** be used as the primary means by which you validate your programs! It is at best a secondary measure. I can not guarantee that the parsing of programs is bug free nor that behavior of logic operators have the same semantics as the 'real deal'. 
+This is an experimental project meant largely as a proof-of-concept. It ***SHOULD NOT*** be used as the primary means by which you validate your programs! It is at best a secondary measure. I can not guarantee that the parsing of programs is bug free nor that behavior of logic operators have the same semantics as the 'real deal'.
+
+The modeling of built-in parts is not comprehensive: Contributions are welcome. The modeling of program execution is very limited, so I would only expect this to work for straight forward safety programs (no control flow manipulation is currently supported).
 
 ## Installation
 
