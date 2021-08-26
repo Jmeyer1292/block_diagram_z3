@@ -3,7 +3,7 @@
 :warning: **This is an experimental tool for analyzing safety programs, but it isn't safety rated itself!** Please don't rely on this alone for your system designs.
 
 ## Forward
-Siemens Programmable Logic Controllers (or PLCs) are frequently used in the construction of "safety systems" that mitigate risks to people, but the language and environment used to create software for these systems makes traditional software testing hard. Playing with formal methods in other domains (FPGAs) led me to ask "Why the hell don't we have these tools here?"
+Siemens Programmable Logic Controllers (or PLCs) are frequently used in the construction of "safety systems" that mitigate risks to people, but the language and environment used to create software for these systems makes traditional software testing hard. Playing with formal methods in other domains (FPGAs [1]) led me to ask "Why the hell don't we have these tools here?"
 
 This **experimental** project is comprised of a set of tools that can:
  - consume the serialized (XML) form of a "function block diagram" from Siemens' TIA Portal (V16+), and
@@ -118,3 +118,4 @@ Note that this library uses the Python stdlib `logging` module and logs everythi
 ## References
 
 [0] https://github.com/Z3Prover/z3
+[1] https://github.com/YosysHQ/SymbiYosys
