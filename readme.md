@@ -1,4 +1,7 @@
 # Function Block Diagram Analysis With Z3
+
+:warning: **This is an experimental tool for analyzing safety programs, but it isn't safety rated itself!** Please don't rely on this alone for your system designs.
+
 ## Forward
 Siemens Programmable Logic Controllers (or PLCs) are frequently used in the construction of "safety systems" that mitigate risks to people, but the language and environment used to create software for these systems makes traditional software testing hard. Playing with formal methods in other domains (FPGAs) led me to ask "Why the hell don't we have these tools here?"
 
