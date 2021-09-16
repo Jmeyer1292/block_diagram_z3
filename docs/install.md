@@ -1,6 +1,6 @@
 # Installation
 
-## TIA Portal
+## TIA Portal (V16)
 This project was largely tested with TIA Portal V16. Once installed you need to do two things:
 
   1. Setup the export rules for your TIA portal install. Configuration menus for these are located under `Options -> Settings -> Version control interface`. Set the export format of datablocks to `.db` files and set user-defined data types to `.udt` files. See the following pictures:
