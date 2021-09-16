@@ -19,6 +19,8 @@ Here's an example of what the TIA Portal IDE might show you:
 
 ## Example
 
+**For a slightly more thorough walkthrough, please see [the intro doc!](docs/intro.md)**
+
 See `tests/integration/test_udt_project.py`:
 
 ```python
@@ -88,28 +90,7 @@ This is an experimental project meant largely as a proof-of-concept. It ***SHOUL
 The modeling of built-in parts is not comprehensive: Contributions are welcome. The modeling of program execution is very limited, so I would only expect this to work for straight forward safety programs (no control flow manipulation is currently supported).
 
 ## Installation
-
-### TIA Portal
-This project was largely tested with TIA Portal V16. Once installed you need to do two things:
-
-1. Setup the export rules for your TIA portal install. These settings are located in the preferences menu under the version control interface heading. Set the export format of datablocks to `.db` files and set user-defined data types to `.udt` files.
-
-2. Setup the version control export for your particular project. This involves consulting the property tree of the project itself for a given PLC and setting up an export directory then running an action to synchronize to a folder. The product of this step may be consumed by these analysis tools. 
-
-I found [this youtube video](https://www.youtube.com/watch?v=Jm-KNwNnrgQ) helpful in demonstrating both the act of exporting as well as some other useful tools for this kind of work.
-
-**TODO(Jmeyer)**: Pictures!
-
-### Python
-1. Install python3.9 and pip.
-   * On Ubuntu, you can often use the package manager `sudo apt install python3.9 python3-pip`
-   * On Windows (if not using WSL), consider using the the stable release installers from `https://www.python.org/downloads/windows/` to get started. I've had some coworkers report that the python versions from the Windows store added a layer of headache to managing pip packages.
-2. Clone and check-out the project.
-3. Install pipenv and the required dependencies. Navigate to the checked-out directory and:
-   * `python3 -m pip install pipenv`
-   * `pipenv install`
-4. Run tests
-   * `pipenv run python -m pytest`
+See [the docs/install.md instructions](docs/install.md) for information on setting up Python and TIA Portal.  
 
 ## Configuration
 
@@ -118,4 +99,6 @@ Note that this library uses the Python stdlib `logging` module and logs everythi
 ## References
 
 [0] https://github.com/Z3Prover/z3
+
 [1] https://github.com/YosysHQ/SymbiYosys
+

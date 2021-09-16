@@ -1,0 +1,13 @@
+﻿DATA_BLOCK "DataFromSafety"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      running : Bool;
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+
