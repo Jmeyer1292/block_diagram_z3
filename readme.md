@@ -19,6 +19,8 @@ Here's an example of what the TIA Portal IDE might show you:
 
 ## Example
 
+**For a slightly more thorough walkthrough, please see [the intro doc!](docs/intro.md)**
+
 See `tests/integration/test_udt_project.py`:
 
 ```python
